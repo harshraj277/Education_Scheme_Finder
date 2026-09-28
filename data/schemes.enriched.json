@@ -1,0 +1,1304 @@
+{
+  "meta": {
+    "title": "Government of India - Education Schemes Database (enriched)",
+    "description": "education_schemes.json enriched with machine-filterable fields so a frontend can run eligibility matching. Original 17 fields preserved verbatim.",
+    "last_compiled": "2026-09-10",
+    "enriched_on": "2026-09-28",
+    "disclaimer": "Scheme rules, benefit amounts, income ceilings, and portal URLs change periodically (and with union budgets each year). Verify against the official ministry/scheme websites before using figures in production, especially anything user-facing.",
+    "record_count": 24,
+    "data_quality": {
+      "preserved_verbatim": [
+        "id",
+        "name",
+        "short_name",
+        "category",
+        "ministry",
+        "implementing_body",
+        "launch_year",
+        "scheme_type",
+        "status",
+        "description",
+        "coverage_amount",
+        "eligibility",
+        "target_beneficiaries",
+        "key_features",
+        "official_website",
+        "notes"
+      ],
+      "derived_rules": {
+        "education_level": "Mapped from class/level wording already present in the source description and eligibility fields.",
+        "aid_type": "Assigned from the benefit described in coverage_amount.",
+        "application_required": "Assigned from how the source says a beneficiary is enrolled or paid (e.g. 'no separate application required' -> none).",
+        "benefits_individual": "false where coverage_amount is a programme/institutional outlay rather than a benefit to one person.",
+        "max_income": "Only set where a rupee figure was already written in the source eligibility/coverage text. Never inferred.",
+        "min_marks_pct": "Only set where a percentage was already written in the source."
+      },
+      "not_yet_available": [
+        "documents_required",
+        "application_deadline",
+        "application_link",
+        "helpline",
+        "state",
+        "renewal_conditions",
+        "last_verified_date"
+      ],
+      "not_yet_available_note": "These fields are required by the website spec but appear nowhere in education_schemes.json. They are NOT invented here. Source them from the National Scholarship Portal (scholarships.gov.in) and each scheme's official site, then set last_verified_date. Until then the frontend must not render an Apply button or a deadline countdown for any scheme.",
+      "income_criterion_legend": {
+        "limit-known": "A rupee income ceiling exists in the source text and is recorded in max_income.",
+        "no-limit": "The source describes the scheme as income-independent or universal. No ceiling applies.",
+        "unstated": "The source refers to an income criterion but gives no figure. max_income is null and the frontend must NOT claim eligibility.",
+        "not-applicable": "Institutional, infrastructure or policy entry with no individual income test."
+      }
+    }
+  },
+  "categories": [
+    "School Education - Infrastructure & Access",
+    "School Education - Nutrition",
+    "Scholarship - Merit/Means",
+    "Scholarship - Social Category (SC/ST/OBC/Minority)",
+    "Girl Child Education",
+    "Higher Education - Access & Loans",
+    "Higher Education - Institutional Excellence",
+    "Skill Development & Vocational Training",
+    "Digital Education",
+    "Residential/Special Category Schools",
+    "Teacher Education"
+  ],
+  "filter_vocabulary": {
+    "education_level": [
+      "pre-primary",
+      "school",
+      "undergraduate",
+      "postgraduate",
+      "doctoral",
+      "diploma/vocational",
+      "not-applicable"
+    ],
+    "aid_type": [
+      "scholarship",
+      "fee-waiver",
+      "loan-subsidy",
+      "hostel",
+      "device",
+      "nutrition",
+      "digital-content",
+      "skill-training",
+      "residential-school",
+      "school-education",
+      "savings-account",
+      "infrastructure",
+      "policy",
+      "advocacy"
+    ],
+    "application_required": [
+      "none",
+      "online",
+      "school",
+      "entrance-test",
+      "in-person",
+      "via-employer",
+      "varies"
+    ],
+    "application_required_labels": {
+      "none": "No application needed",
+      "online": "Apply online",
+      "school": "Through your school",
+      "entrance-test": "Entrance test",
+      "in-person": "In person at a centre",
+      "via-employer": "Through your employer",
+      "varies": "Varies by component"
+    },
+    "gender": [
+      "all",
+      "female",
+      "male"
+    ],
+    "merit_type": [
+      "merit",
+      "means",
+      "both",
+      "not-applicable"
+    ],
+    "income_bands": [
+      {
+        "id": "any",
+        "label": "Any income",
+        "min": null,
+        "max": null
+      },
+      {
+        "id": "b1",
+        "label": "Below ₹1 lakh / year",
+        "min": 0,
+        "max": 100000
+      },
+      {
+        "id": "b2",
+        "label": "₹1 lakh – ₹2.5 lakh / year",
+        "min": 100000,
+        "max": 250000
+      },
+      {
+        "id": "b3",
+        "label": "₹2.5 lakh – ₹4.5 lakh / year",
+        "min": 250000,
+        "max": 450000
+      },
+      {
+        "id": "b4",
+        "label": "₹4.5 lakh – ₹8 lakh / year",
+        "min": 450000,
+        "max": 800000
+      },
+      {
+        "id": "b5",
+        "label": "Above ₹8 lakh / year",
+        "min": 800000,
+        "max": 900000000
+      },
+      {
+        "id": "prefer-not",
+        "label": "Prefer not to say",
+        "min": null,
+        "max": null
+      }
+    ],
+    "income_band_matching_rule": "A scheme matches a band when scheme.max_income >= band.max. income_criterion 'no-limit' always matches. income_criterion 'unstated' never matches a specific band and is only shown when the user opts in, because the dataset does not record a figure. 'prefer-not' behaves like 'any' but is remembered as an explicit user choice.",
+    "disability_legend": {
+      "eligible": "The source text explicitly names disability provision (reservation, stipend, or adapted content).",
+      "unstated": "No disability provision is mentioned. This is NOT the same as 'not eligible' - it means the dataset is silent. Only three schemes in this dataset name a disability provision."
+    },
+    "beneficiary": [
+      "all",
+      "SC",
+      "ST",
+      "OBC",
+      "EBC",
+      "DNT",
+      "minority"
+    ],
+    "area": [
+      "Digital Education",
+      "Girl Child Education",
+      "Higher Education - Access & Loans",
+      "Higher Education - Institutional Excellence",
+      "Residential/Special Category Schools",
+      "Scholarship - Merit/Means",
+      "Scholarship - Social Category (SC/ST/OBC/Minority)",
+      "School Education - Infrastructure & Access",
+      "School Education - Nutrition",
+      "Skill Development & Vocational Training"
+    ],
+    "area_labels": {
+      "Digital Education": "Digital Education",
+      "Girl Child Education": "Girl Child Education",
+      "Higher Education - Access & Loans": "Higher Education — Access & Loans",
+      "Higher Education - Institutional Excellence": "Higher Education — Institutional Excellence",
+      "Residential/Special Category Schools": "Residential / Special Category Schools",
+      "Scholarship - Merit/Means": "Scholarship — Merit / Means",
+      "Scholarship - Social Category (SC/ST/OBC/Minority)": "Scholarship — Social Category (SC / ST / OBC / Minority)",
+      "School Education - Infrastructure & Access": "School Education — Infrastructure & Access",
+      "School Education - Nutrition": "School Education — Nutrition",
+      "Skill Development & Vocational Training": "Skill Development & Vocational Training"
+    },
+    "axis_note": "Two independent groupings share the word 'category'. They must not be confused. 'area' is record.category: the thematic area a scheme belongs to. 'beneficiary' is filter.category: the social category a scheme is restricted to, or ['all'] when it is open to everyone. Filtering by one never implies the other."
+  },
+  "schemes": [
+    {
+      "id": "SAMAGRA-SHIKSHA",
+      "name": "Samagra Shiksha Abhiyan",
+      "short_name": "Samagra Shiksha",
+      "category": "School Education - Infrastructure & Access",
+      "ministry": "Ministry of Education (Dept. of School Education and Literacy)",
+      "implementing_body": "Ministry of Education, States/UTs",
+      "launch_year": 2018,
+      "scheme_type": "Centrally Sponsored Scheme",
+      "status": "active",
+      "description": "Integrated scheme for school education from pre-school to senior secondary level, subsuming earlier schemes SSA, RMSA, and Teacher Education. Largest school-education programme in the central budget.",
+      "coverage_amount": "Rs. 42,100 crore allocation for 2026-27 (programme-level, not individual benefit)",
+      "eligibility": "All government and government-aided schools; students from pre-school through Class XII",
+      "target_beneficiaries": "School-going children across pre-primary to senior secondary levels nationwide",
+      "key_features": [
+        "Improves school infrastructure",
+        "Free textbooks and uniforms for eligible students",
+        "Stipends and accessible facilities for children with disabilities (CWSN)",
+        "Teacher training and residential school funding",
+        "Subsumes Sarva Shiksha Abhiyan (SSA), RMSA, and Teacher Education schemes"
+      ],
+      "official_website": "https://samagra.education.gov.in",
+      "notes": null,
+      "filter": {
+        "education_level": [
+          "pre-primary",
+          "school"
+        ],
+        "aid_type": [
+          "infrastructure",
+          "fee-waiver"
+        ],
+        "disability": "eligible",
+        "disability_basis": "Key feature states 'Stipends and accessible facilities for children with disabilities (CWSN)'.",
+        "benefits_individual": false,
+        "application_required": "none",
+        "max_income": null,
+        "income_criterion": "not-applicable",
+        "min_marks_pct": null,
+        "category": [
+          "all"
+        ],
+        "gender": "all",
+        "merit_type": "not-applicable"
+      },
+      "_review": []
+    },
+    {
+      "id": "PM-POSHAN",
+      "name": "PM POSHAN (erstwhile Mid-Day Meal Scheme)",
+      "short_name": "PM POSHAN",
+      "category": "School Education - Nutrition",
+      "ministry": "Ministry of Education (Dept. of School Education and Literacy)",
+      "implementing_body": "States/UTs",
+      "launch_year": 1995,
+      "scheme_type": "Centrally Sponsored Scheme",
+      "status": "active",
+      "description": "Provides one hot cooked meal to children studying in Classes I-VIII in government and government-aided schools, aimed at improving nutritional status and encouraging regular school attendance.",
+      "coverage_amount": "Rs. 12,750 crore allocation for 2026-27 (programme-level)",
+      "eligibility": "Automatic for all children enrolled in Classes I-VIII at participating government/government-aided schools; no separate application required",
+      "target_beneficiaries": "Children in Classes I-VIII in government and government-aided schools",
+      "key_features": [
+        "Renamed from 'Mid-Day Meal Scheme' to 'PM POSHAN' in 2021",
+        "Free hot cooked meal on all school working days",
+        "Also covers micronutrient supplementation and health check-ups in convergence with other programmes"
+      ],
+      "official_website": "https://pmposhan.education.gov.in",
+      "notes": null,
+      "filter": {
+        "education_level": [
+          "school"
+        ],
+        "aid_type": [
+          "nutrition"
+        ],
+        "benefits_individual": true,
+        "application_required": "none",
+        "max_income": null,
+        "income_criterion": "no-limit",
+        "min_marks_pct": null,
+        "category": [
+          "all"
+        ],
+        "gender": "all",
+        "merit_type": "not-applicable"
+      },
+      "_review": []
+    },
+    {
+      "id": "NMMS",
+      "name": "National Means-cum-Merit Scholarship Scheme",
+      "short_name": "NMMS",
+      "category": "Scholarship - Merit/Means",
+      "ministry": "Ministry of Education (Dept. of School Education and Literacy)",
+      "implementing_body": "States/UTs via National Scholarship Portal",
+      "launch_year": 2008,
+      "scheme_type": "Centrally Sponsored Scheme",
+      "status": "active",
+      "description": "Awards scholarships to meritorious students from economically weaker sections to prevent dropout after Class VIII and support continued education through Class XII.",
+      "coverage_amount": "Rs. 12,000 per year (Rs. 1,000/month), payable from Class IX to XII",
+      "eligibility": "Minimum 55% marks in Class VII (relaxable for SC/ST) to appear for selection test; minimum 55% in Class VIII; parental income up to Rs. 3.5 lakh per annum; studying in government/government-aided/local-body schools",
+      "target_beneficiaries": "Meritorious students from economically weaker sections entering Class IX",
+      "key_features": [
+        "100,000 scholarships awarded annually nationwide",
+        "State-level selection test required",
+        "Disbursed via Public Financial Management System (PFMS)/DBT",
+        "Applied for via National Scholarship Portal (scholarships.gov.in)"
+      ],
+      "official_website": "https://scholarships.gov.in",
+      "notes": null,
+      "filter": {
+        "education_level": [
+          "school"
+        ],
+        "aid_type": [
+          "scholarship"
+        ],
+        "benefits_individual": true,
+        "application_required": "online",
+        "max_income": 350000,
+        "income_criterion": "limit-known",
+        "min_marks_pct": 55,
+        "category": [
+          "all"
+        ],
+        "gender": "all",
+        "merit_type": "both"
+      },
+      "_review": [
+        "max_income 350000 derived verbatim from eligibility text 'parental income up to Rs. 3.5 lakh per annum'. Income ceilings are revised periodically - re-verify each budget cycle.",
+        "min_marks_pct 55 derived from 'Minimum 55% marks in Class VII'. Note the source also states a relaxable rule for SC/ST which is not represented numerically here."
+      ]
+    },
+    {
+      "id": "PM-USP",
+      "name": "Pradhan Mantri Uchchatar Shiksha Protsahan Yojana",
+      "short_name": "PM-USP",
+      "category": "Scholarship - Merit/Means",
+      "ministry": "Ministry of Education (Dept. of Higher Education)",
+      "implementing_body": "AICTE / National Scholarship Portal",
+      "launch_year": 2021,
+      "scheme_type": "Central Sector Scheme",
+      "status": "active",
+      "description": "Provides financial assistance to meritorious students from economically weaker backgrounds pursuing undergraduate and postgraduate courses, and also encompasses the Central Sector Interest Subsidy (CSIS) component for education loans.",
+      "coverage_amount": "Rs. 12,000/year for first 3 years of UG courses; Rs. 20,000/year for PG courses",
+      "eligibility": "Above 80 percentile in Class XII board exam; family income below Rs. 4.5 lakh per annum; admission in AICTE/UGC-recognised institutions",
+      "target_beneficiaries": "Meritorious economically weaker undergraduate/postgraduate students",
+      "key_features": [
+        "Direct Benefit Transfer (DBT) to student bank accounts",
+        "Includes Central Sector Interest Subsidy (CSIS) on education loans for full interest waiver during moratorium",
+        "Applied for via National Scholarship Portal"
+      ],
+      "official_website": "https://scholarships.gov.in",
+      "notes": null,
+      "filter": {
+        "education_level": [
+          "undergraduate",
+          "postgraduate"
+        ],
+        "aid_type": [
+          "scholarship",
+          "loan-subsidy"
+        ],
+        "benefits_individual": true,
+        "application_required": "online",
+        "max_income": 450000,
+        "income_criterion": "limit-known",
+        "min_percentile_xii": 80,
+        "min_marks_pct": null,
+        "category": [
+          "all"
+        ],
+        "gender": "all",
+        "merit_type": "both"
+      },
+      "_review": [
+        "max_income 450000 derived verbatim from eligibility text 'family income below Rs. 4.5 lakh per annum'.",
+        "min_percentile_xii 80 derived from 'Above 80 percentile in Class XII board exam'.",
+        "CSIS is recorded as a component here AND as its own record (PMMVY-EDU-NOTE). A user matching PM-USP will see CSIS as a related duplicate. Consider linking rather than listing both."
+      ]
+    },
+    {
+      "id": "PM-VIDYALAXMI",
+      "name": "PM Vidyalaxmi Scheme",
+      "short_name": "PM-Vidyalaxmi",
+      "category": "Higher Education - Access & Loans",
+      "ministry": "Ministry of Education (Dept. of Higher Education)",
+      "implementing_body": "Ministry of Education / participating banks",
+      "launch_year": 2024,
+      "scheme_type": "Central Sector Scheme",
+      "status": "active",
+      "description": "Mission-mode scheme providing collateral-free, guarantor-free education loans to students admitted on merit to Quality Higher Educational Institutions (QHEIs), with interest subvention for lower-income families, stemming from NEP 2020.",
+      "coverage_amount": "Loans up to Rs. 7.5 lakh with 75% government credit guarantee; 3% interest subvention on loans up to Rs. 10 lakh for family income up to Rs. 8 lakh/year",
+      "eligibility": "Indian students admitted on merit (not management/NRI quota) to one of 1,425+ designated QHEIs; interest subvention requires valid income certificate; benefit usable once per UG/PG/integrated course",
+      "target_beneficiaries": "Students admitted to top-tier higher educational institutions (over 22 lakh students/year targeted)",
+      "key_features": [
+        "Single online portal for education loan applications across multiple banks",
+        "Collateral-free and guarantor-free loans",
+        "Interest capped at bank's EBLR + 0.5%, with further concession for interest-servicing during study",
+        "Tax benefit on interest paid under Section 80E",
+        "Approved by Union Cabinet on 6 November 2024"
+      ],
+      "official_website": "https://www.vidyalakshmi.co.in",
+      "notes": null,
+      "filter": {
+        "education_level": [
+          "undergraduate",
+          "postgraduate"
+        ],
+        "aid_type": [
+          "loan-subsidy"
+        ],
+        "benefits_individual": true,
+        "application_required": "online",
+        "max_income": 800000,
+        "income_criterion": "limit-known",
+        "min_marks_pct": null,
+        "category": [
+          "all"
+        ],
+        "gender": "all",
+        "merit_type": "merit"
+      },
+      "_review": [
+        "max_income 800000 is the ceiling for the 3% interest subvention ONLY, not for the loan itself. Loans up to Rs. 7.5 lakh are available without that income test. Treating 800000 as a single max_income will wrongly hide the loan from users above Rs. 8 lakh. Model these as two separate benefits before shipping.",
+        "QHEI count (1,425+) and annual target (22 lakh) are volatile. Re-verify on vidyalakshmi.co.in."
+      ]
+    },
+    {
+      "id": "RUSA",
+      "name": "Rashtriya Uchchatar Shiksha Abhiyan",
+      "short_name": "RUSA",
+      "category": "Higher Education - Institutional Excellence",
+      "ministry": "Ministry of Education (Dept. of Higher Education)",
+      "implementing_body": "States/UTs",
+      "launch_year": 2013,
+      "scheme_type": "Centrally Sponsored Scheme",
+      "status": "active",
+      "description": "Aims to improve access, equity and quality in state higher education institutions through strategic funding, based on norm-based and performance-linked criteria.",
+      "coverage_amount": "Institutional grants (not an individual student benefit)",
+      "eligibility": "State public universities and colleges meeting RUSA norms",
+      "target_beneficiaries": "State universities and colleges, and by extension their students",
+      "key_features": [
+        "Funding linked to academic, administrative and governance reforms",
+        "Support for new model colleges, infrastructure upgrades, and quality improvement",
+        "Focus on equity for disadvantaged regions and groups"
+      ],
+      "official_website": "https://rusa.nic.in",
+      "notes": null,
+      "filter": {
+        "education_level": [
+          "not-applicable"
+        ],
+        "aid_type": [
+          "infrastructure"
+        ],
+        "benefits_individual": false,
+        "application_required": "none",
+        "max_income": null,
+        "income_criterion": "not-applicable",
+        "min_marks_pct": null,
+        "category": [
+          "all"
+        ],
+        "gender": "all",
+        "merit_type": "not-applicable"
+      },
+      "_review": [
+        "Not an individual-benefit scheme. Excluded from student-facing results by default; shown only when the user enables 'Show institutional and policy schemes'."
+      ]
+    },
+    {
+      "id": "PM-YASASVI",
+      "name": "PM Young Achievers Scholarship Award Scheme for Vibrant India (PM-YASASVI)",
+      "short_name": "PM-YASASVI",
+      "category": "Scholarship - Social Category (SC/ST/OBC/Minority)",
+      "ministry": "Ministry of Social Justice and Empowerment",
+      "implementing_body": "National Scholarship Portal",
+      "launch_year": 2021,
+      "scheme_type": "Central Sector Scheme",
+      "status": "active",
+      "description": "Provides scholarships to meritorious students from Other Backward Classes (OBC), Economically Backward Classes (EBC), and Denotified, Nomadic and Semi-Nomadic Tribes (DNT/NT/SNT) to support their studies from Class IX through higher education.",
+      "coverage_amount": "Varies by stage - pre-matric, post-matric (Class XI-XII) and top-class college components, generally in the range of Rs. 12,000-1,25,000+ per year depending on level",
+      "eligibility": "Students belonging to OBC, EBC, DNT/NT/SNT categories; family income limits apply and vary by scheme component",
+      "target_beneficiaries": "Meritorious students from OBC/EBC/DNT/NT/SNT backgrounds",
+      "key_features": [
+        "Covers pre-matric, post-matric, and 'Top Class' (premier institution) tiers",
+        "Selection via YASASVI Entrance Test (YET) for some components",
+        "Applied for via National Scholarship Portal"
+      ],
+      "official_website": "https://yet.nta.ac.in",
+      "notes": null,
+      "filter": {
+        "education_level": [
+          "school",
+          "undergraduate",
+          "postgraduate"
+        ],
+        "aid_type": [
+          "scholarship"
+        ],
+        "benefits_individual": true,
+        "application_required": "varies",
+        "max_income": null,
+        "income_criterion": "unstated",
+        "min_marks_pct": null,
+        "category": [
+          "OBC",
+          "EBC",
+          "DNT"
+        ],
+        "gender": "all",
+        "merit_type": "merit"
+      },
+      "_review": [
+        "CRITICAL: max_income is null because the source says 'family income limits apply and vary by scheme component' without giving figures. The income filter will not match this scheme. Source the three component ceilings from scholarships.gov.in before launch.",
+        "official_website points to yet.nta.ac.in (the entrance test portal) but applications run on scholarships.gov.in. Consider using both."
+      ]
+    },
+    {
+      "id": "TOP-CLASS-OBC",
+      "name": "Top Class Education Scheme for OBC, EBC and DNT Students",
+      "short_name": "Top Class Education (OBC/EBC/DNT)",
+      "category": "Scholarship - Social Category (SC/ST/OBC/Minority)",
+      "ministry": "Ministry of Social Justice and Empowerment",
+      "implementing_body": "National Scholarship Portal",
+      "launch_year": 2004,
+      "scheme_type": "Central Sector Scheme",
+      "status": "active",
+      "description": "Provides full financial support to meritorious OBC, EBC and DNT students admitted to identified premier higher education institutions for professional and technical courses.",
+      "coverage_amount": "Full tuition fee up to Rs. 2 lakh/year; accommodation up to Rs. 3,000/month; books/stationery allowance up to Rs. 5,000/year; one-time laptop grant up to Rs. 45,000",
+      "eligibility": "Family income up to Rs. 2.5 lakh/year (OBC/DNT) or Rs. 1 lakh/year (EBC); admission via merit to a listed premier institution",
+      "target_beneficiaries": "Meritorious OBC/EBC/DNT students at premier institutions",
+      "key_features": [
+        "Covers full tuition and near-complete cost of living at listed institutions",
+        "One-time laptop/device grant",
+        "Applied for via National Scholarship Portal"
+      ],
+      "official_website": "https://scholarships.gov.in",
+      "notes": null,
+      "filter": {
+        "education_level": [
+          "undergraduate",
+          "postgraduate"
+        ],
+        "aid_type": [
+          "scholarship",
+          "hostel",
+          "device"
+        ],
+        "benefits_individual": true,
+        "application_required": "online",
+        "max_income": 250000,
+        "income_criterion": "limit-known",
+        "min_marks_pct": null,
+        "category": [
+          "OBC",
+          "EBC",
+          "DNT"
+        ],
+        "gender": "all",
+        "merit_type": "merit"
+      },
+      "_review": [
+        "max_income 250000 is the OBC/DNT ceiling. EBC ceiling is 100000. A single max_income cannot express both - a user selecting EBC could be shown a scheme they exceed. Consider income_ceiling_by_category.",
+        "The Rs. 45,000 laptop grant is one-time, not annual."
+      ]
+    },
+    {
+      "id": "PM-YOUNG-ACHIEVERS-ST",
+      "name": "National Fellowship and Scholarship for Higher Education of ST Students",
+      "short_name": "NFST",
+      "category": "Scholarship - Social Category (SC/ST/OBC/Minority)",
+      "ministry": "Ministry of Tribal Affairs",
+      "implementing_body": "National Scholarship Portal",
+      "launch_year": 2005,
+      "scheme_type": "Central Sector Scheme",
+      "status": "active",
+      "description": "Provides fellowships and scholarships to Scheduled Tribe (ST) students for pursuing higher education, including M.Phil and Ph.D. programmes.",
+      "coverage_amount": "Fellowship amount aligned with UGC's NET-JRF rates for research scholars; separate scholarship components for professional/technical courses",
+      "eligibility": "ST students admitted to recognised universities/institutions for post-graduate and doctoral studies",
+      "target_beneficiaries": "Scheduled Tribe students pursuing higher/research education",
+      "key_features": [
+        "Covers M.Phil/Ph.D. research fellowships",
+        "Applied for via National Scholarship Portal"
+      ],
+      "official_website": "https://scholarships.gov.in",
+      "notes": null,
+      "filter": {
+        "education_level": [
+          "postgraduate",
+          "doctoral"
+        ],
+        "aid_type": [
+          "scholarship"
+        ],
+        "benefits_individual": true,
+        "application_required": "online",
+        "max_income": null,
+        "income_criterion": "unstated",
+        "min_marks_pct": null,
+        "category": [
+          "ST"
+        ],
+        "gender": "all",
+        "merit_type": "merit"
+      },
+      "_review": [
+        "id is PM-YOUNG-ACHIEVERS-ST but short_name is NFST and the name is 'National Fellowship and Scholarship... of ST Students'. The id appears to be a copy-paste error carried over from the PM-YASASVI record. Recommend renaming the id to NFST.",
+        "Source states no income ceiling. income_criterion is unstated - confirm whether an income test applies to the fellowship component."
+      ]
+    },
+    {
+      "id": "POST-MATRIC-SC",
+      "name": "Post Matric Scholarship Scheme for SC Students",
+      "short_name": "PMS-SC",
+      "category": "Scholarship - Social Category (SC/ST/OBC/Minority)",
+      "ministry": "Ministry of Social Justice and Empowerment",
+      "implementing_body": "States/UTs via National Scholarship Portal",
+      "launch_year": 1944,
+      "scheme_type": "Centrally Sponsored Scheme",
+      "status": "active",
+      "description": "Provides financial assistance to Scheduled Caste students studying at post-matriculation or post-secondary stage to reduce the economic burden of higher education.",
+      "coverage_amount": "Maintenance allowance and reimbursement of compulsory non-refundable fees, varying by course and institution type",
+      "eligibility": "SC students studying in Class XI and above; family income ceiling applies (revised periodically)",
+      "target_beneficiaries": "Scheduled Caste students in post-matric/higher education",
+      "key_features": [
+        "One of India's oldest scholarship schemes",
+        "Covers maintenance allowance, tuition and other compulsory fees",
+        "Applied for via National Scholarship Portal"
+      ],
+      "official_website": "https://scholarships.gov.in",
+      "notes": null,
+      "filter": {
+        "education_level": [
+          "school",
+          "undergraduate",
+          "postgraduate"
+        ],
+        "aid_type": [
+          "scholarship",
+          "fee-waiver"
+        ],
+        "benefits_individual": true,
+        "application_required": "online",
+        "max_income": null,
+        "income_criterion": "unstated",
+        "min_marks_pct": null,
+        "category": [
+          "SC"
+        ],
+        "gender": "all",
+        "merit_type": "means"
+      },
+      "_review": [
+        "CRITICAL: source says 'family income ceiling applies (revised periodically)' with no figure. This is one of the most-used SC schemes, so an unstated ceiling means the income filter silently hides it from most users. Source the current ceiling from scholarships.gov.in.",
+        "The source eligibility says 'Class XI and above' but the scheme is named Post Matric. Verify the starting class."
+      ]
+    },
+    {
+      "id": "BETI-BACHAO",
+      "name": "Beti Bachao Beti Padhao",
+      "short_name": "BBBP",
+      "category": "Girl Child Education",
+      "ministry": "Ministry of Women and Child Development",
+      "implementing_body": "Ministry of Women and Child Development, Ministry of Health and Family Welfare, Ministry of Education",
+      "launch_year": 2015,
+      "scheme_type": "Centrally Sponsored Scheme",
+      "status": "active",
+      "description": "National flagship programme addressing the declining child sex ratio and promoting the survival, protection and education of the girl child through multi-sectoral convergence.",
+      "coverage_amount": "Not applicable (advocacy, convergence and sectoral schemes)",
+      "eligibility": "Universal - focus on girl children nationwide, especially in gender-critical districts",
+      "target_beneficiaries": "Girl children and their families",
+      "key_features": [
+        "Media/community advocacy against sex-selective practices",
+        "Convergence with health and education sector schemes",
+        "Implemented initially in gender-critical districts, later expanded nationwide"
+      ],
+      "official_website": "https://wcd.nic.in/bbbp-schemes",
+      "notes": null,
+      "filter": {
+        "education_level": [
+          "not-applicable"
+        ],
+        "aid_type": [
+          "advocacy"
+        ],
+        "benefits_individual": false,
+        "application_required": "none",
+        "max_income": null,
+        "income_criterion": "no-limit",
+        "min_marks_pct": null,
+        "category": [
+          "all"
+        ],
+        "gender": "female",
+        "merit_type": "not-applicable"
+      },
+      "_review": [
+        "Advocacy programme, not a benefit scheme. Should not appear in 'scholarships you can apply for' results. Grouped under girl-child schemes but points users to Sukanya Samriddhi for the actual monetary product."
+      ]
+    },
+    {
+      "id": "SUKANYA-SAMRIDDHI",
+      "name": "Sukanya Samriddhi Yojana",
+      "short_name": "SSY",
+      "category": "Girl Child Education",
+      "ministry": "Ministry of Finance (Dept. of Economic Affairs)",
+      "implementing_body": "Post offices and authorised banks",
+      "launch_year": 2015,
+      "scheme_type": "Small Savings Scheme (under Beti Bachao Beti Padhao)",
+      "status": "active",
+      "description": "Government-backed small savings scheme encouraging parents to build a fund for a girl child's future education and marriage expenses, offering a high tax-free interest rate.",
+      "coverage_amount": "Deposits from Rs. 250 to Rs. 1,50,000 per year; interest rate set quarterly by government (historically among the highest small-savings rates)",
+      "eligibility": "Account can be opened by parents/guardian for a girl child from birth until she turns 10 years",
+      "target_beneficiaries": "Girl children (via parent/guardian-operated savings account)",
+      "key_features": [
+        "Tax-exempt under Section 80C (EEE status)",
+        "Account matures after 21 years or on marriage after age 18",
+        "Partial withdrawal permitted for higher education expenses after age 18"
+      ],
+      "official_website": "https://www.india.gov.in/spotlight/sukanya-samriddhi-yojana",
+      "notes": null,
+      "filter": {
+        "education_level": [
+          "not-applicable"
+        ],
+        "aid_type": [
+          "savings-account"
+        ],
+        "benefits_individual": true,
+        "application_required": "in-person",
+        "max_income": null,
+        "income_criterion": "no-limit",
+        "max_child_age_at_opening": 10,
+        "min_marks_pct": null,
+        "category": [
+          "all"
+        ],
+        "gender": "female",
+        "merit_type": "not-applicable"
+      },
+      "_review": [
+        "Beneficiary is a girl child, but the applicant is a parent/guardian. Add an applicant_type field if you want to separate 'student searching' from 'parent saving' journeys.",
+        "The interest rate is reset quarterly by government and is NOT stored in this record. Display it from India Post / RBI at render time or the card will show a stale rate.",
+        "Deposit ceiling (Rs. 1.5 lakh/yr) is frequently revised - re-verify."
+      ]
+    },
+    {
+      "id": "CBSE-SINGLE-GIRL",
+      "name": "CBSE Single Girl Child Scholarship Scheme",
+      "short_name": "CBSE SGC Scholarship",
+      "category": "Girl Child Education",
+      "ministry": "Ministry of Education (via CBSE)",
+      "implementing_body": "Central Board of Secondary Education (CBSE)",
+      "launch_year": 2008,
+      "scheme_type": "Board-administered scholarship",
+      "status": "active",
+      "description": "Scholarship for single girl children (only child of parents) who score well in Class X CBSE board exams, to support their Class XI-XII studies.",
+      "coverage_amount": "Rs. 500 per month for two years (Class XI and XII)",
+      "eligibility": "Girl student who is the only child of her parents; minimum 60% aggregate marks in CBSE Class X; continuing studies in a CBSE-affiliated school",
+      "target_beneficiaries": "Single girl children pursuing Class XI-XII",
+      "key_features": [
+        "Renewed annually subject to minimum 60% marks in Class XI to continue into Class XII",
+        "Applied for through the school/CBSE regional office"
+      ],
+      "official_website": "https://www.cbse.gov.in",
+      "notes": null,
+      "filter": {
+        "education_level": [
+          "school"
+        ],
+        "aid_type": [
+          "scholarship"
+        ],
+        "benefits_individual": true,
+        "application_required": "school",
+        "max_income": null,
+        "income_criterion": "no-limit",
+        "min_marks_pct": 60,
+        "only_child_required": true,
+        "category": [
+          "all"
+        ],
+        "gender": "female",
+        "merit_type": "merit"
+      },
+      "_review": [
+        "No income condition in the source - this is a merit/sibling-position scholarship, income_criterion set to no-limit.",
+        "only_child_required is derived from 'the only child of her parents'. This is a hard gate that a category/income filter will not catch, so a student with siblings could still match on other criteria. Surface it as a visible eligibility line on the card."
+      ]
+    },
+    {
+      "id": "NEP-2020",
+      "name": "National Education Policy 2020 (implementation framework)",
+      "short_name": "NEP 2020",
+      "category": "Higher Education - Institutional Excellence",
+      "ministry": "Ministry of Education",
+      "implementing_body": "Ministry of Education, UGC, AICTE, States/UTs",
+      "launch_year": 2020,
+      "scheme_type": "National Policy Framework",
+      "status": "active",
+      "description": "Comprehensive policy framework (not a single scheme) restructuring India's education system, including school curriculum (5+3+3+4), multiple entry-exit in higher education, multidisciplinary institutions, and the Academic Bank of Credits.",
+      "coverage_amount": "Not applicable (policy framework, implemented via multiple downstream schemes)",
+      "eligibility": "Not applicable (systemic policy)",
+      "target_beneficiaries": "All learners across the education system",
+      "key_features": [
+        "New 5+3+3+4 school curricular structure",
+        "Academic Bank of Credits (ABC) and multiple entry-exit options",
+        "Foundational Literacy and Numeracy focus (NIPUN Bharat)",
+        "Many other schemes (PM Vidyalaxmi, PM-USP, PM SHRI) implement NEP 2020 goals"
+      ],
+      "official_website": "https://www.education.gov.in/nep",
+      "notes": "Included as a reference/framework entry since many active schemes are explicitly implementing NEP 2020 goals.",
+      "filter": {
+        "education_level": [
+          "not-applicable"
+        ],
+        "aid_type": [
+          "policy"
+        ],
+        "benefits_individual": false,
+        "application_required": "none",
+        "max_income": null,
+        "income_criterion": "not-applicable",
+        "min_marks_pct": null,
+        "category": [
+          "all"
+        ],
+        "gender": "all",
+        "merit_type": "not-applicable"
+      },
+      "_review": [
+        "Policy document. Excluded from student-facing results by default."
+      ]
+    },
+    {
+      "id": "PM-SHRI",
+      "name": "PM Schools for Rising India",
+      "short_name": "PM SHRI",
+      "category": "School Education - Infrastructure & Access",
+      "ministry": "Ministry of Education",
+      "implementing_body": "States/UTs, local bodies",
+      "launch_year": 2022,
+      "scheme_type": "Centrally Sponsored Scheme",
+      "status": "active",
+      "description": "Upgrades existing schools (government schools run by centre/states/UTs/local bodies) into exemplar institutions that showcase all components of NEP 2020, acting as mentor schools for others in their area.",
+      "coverage_amount": "Institutional upgrade grants (not an individual benefit)",
+      "eligibility": "Existing government/local-body schools selected via a challenge-mode process",
+      "target_beneficiaries": "Students in selected PM SHRI schools; broader system via mentoring effect",
+      "key_features": [
+        "Target of developing 14,500+ PM SHRI schools",
+        "Model schools for NEP 2020 implementation",
+        "Green school features, modern infrastructure, and ICT-enabled learning"
+      ],
+      "official_website": "https://pmshrischools.education.gov.in",
+      "notes": null,
+      "filter": {
+        "education_level": [
+          "pre-primary",
+          "school"
+        ],
+        "aid_type": [
+          "infrastructure"
+        ],
+        "benefits_individual": false,
+        "application_required": "none",
+        "max_income": null,
+        "income_criterion": "not-applicable",
+        "min_marks_pct": null,
+        "category": [
+          "all"
+        ],
+        "gender": "all",
+        "merit_type": "not-applicable"
+      },
+      "_review": [
+        "Selection is by school, not student. However students DO benefit by attending a selected school, so consider a 'school-level' display: a student can check whether their school is a PM SHRI school. That is a different lookup than a scholarship match."
+      ]
+    },
+    {
+      "id": "PM-EVIDYA",
+      "name": "PM eVIDYA",
+      "short_name": "PM eVIDYA",
+      "category": "Digital Education",
+      "ministry": "Ministry of Education",
+      "implementing_body": "Ministry of Education",
+      "launch_year": 2020,
+      "scheme_type": "Central Sector Scheme (under Atmanirbhar Bharat Abhiyaan)",
+      "status": "active",
+      "description": "Unifies digital, online and on-air education initiatives to enable multi-mode and equitable access to education, launched in response to school closures during COVID-19.",
+      "coverage_amount": "Free access to digital/broadcast educational content",
+      "eligibility": "Universal - school and higher education students",
+      "target_beneficiaries": "Students across school and higher education, including those without internet access (via TV/radio channels)",
+      "key_features": [
+        "One Class-One Channel initiative on DIKSHA/SWAYAM PRABHA TV channels",
+        "QR-coded energised textbooks for all grades",
+        "Extension of digital content to visually/hearing impaired students"
+      ],
+      "official_website": "https://www.pmevidya.education.gov.in",
+      "notes": null,
+      "filter": {
+        "education_level": [
+          "school",
+          "undergraduate",
+          "postgraduate"
+        ],
+        "aid_type": [
+          "digital-content"
+        ],
+        "disability": "eligible",
+        "disability_basis": "Key feature states 'Extension of digital content to visually/hearing impaired students'.",
+        "benefits_individual": true,
+        "application_required": "none",
+        "max_income": null,
+        "income_criterion": "no-limit",
+        "min_marks_pct": null,
+        "category": [
+          "all"
+        ],
+        "gender": "all",
+        "merit_type": "not-applicable"
+      },
+      "_review": [
+        "No cash benefit and no application. Card should read 'open to everyone' rather than showing an amount or an Apply button."
+      ]
+    },
+    {
+      "id": "SWAYAM",
+      "name": "SWAYAM (Study Webs of Active Learning for Young Aspiring Minds)",
+      "short_name": "SWAYAM",
+      "category": "Digital Education",
+      "ministry": "Ministry of Education",
+      "implementing_body": "AICTE / Ministry of Education",
+      "launch_year": 2017,
+      "scheme_type": "Central Sector Scheme",
+      "status": "active",
+      "description": "National MOOC (massive open online course) platform offering free online courses from school to postgraduate level, integrated with academic credit recognition by UGC/AICTE.",
+      "coverage_amount": "Free courses; nominal fee only for those opting for certification/proctored exam",
+      "eligibility": "Universal - open to any learner",
+      "target_beneficiaries": "School and higher education students, lifelong learners",
+      "key_features": [
+        "Credit transfer recognised by UGC for up to a defined percentage of a degree programme",
+        "Courses across engineering, humanities, sciences, management, school subjects",
+        "Complemented by SWAYAM PRABHA DTH channels for regions with low internet access"
+      ],
+      "official_website": "https://swayam.gov.in",
+      "notes": null,
+      "filter": {
+        "education_level": [
+          "school",
+          "undergraduate",
+          "postgraduate"
+        ],
+        "aid_type": [
+          "digital-content",
+          "fee-waiver"
+        ],
+        "benefits_individual": true,
+        "application_required": "online",
+        "max_income": null,
+        "income_criterion": "no-limit",
+        "min_marks_pct": null,
+        "category": [
+          "all"
+        ],
+        "gender": "all",
+        "merit_type": "not-applicable"
+      },
+      "_review": [
+        "Registration is needed to take a course, so application_required is 'online' even though there is no eligibility gate and no competition. Distinguish 'register' from 'apply and compete' in the UI copy."
+      ]
+    },
+    {
+      "id": "DIKSHA",
+      "name": "DIKSHA (Digital Infrastructure for Knowledge Sharing)",
+      "short_name": "DIKSHA",
+      "category": "Digital Education",
+      "ministry": "Ministry of Education",
+      "implementing_body": "NCERT / Ministry of Education",
+      "launch_year": 2017,
+      "scheme_type": "National Digital Platform",
+      "status": "active",
+      "description": "National platform for school education providing e-content, textbooks (via QR codes), and teacher training resources mapped to state and national curricula.",
+      "coverage_amount": "Free access",
+      "eligibility": "Universal - students, teachers, parents",
+      "target_beneficiaries": "School students and teachers nationwide",
+      "key_features": [
+        "Multilingual content across state boards and NCERT curriculum",
+        "QR-coded textbook linkage (Energised Textbooks)",
+        "Teacher training modules and certification"
+      ],
+      "official_website": "https://diksha.gov.in",
+      "notes": null,
+      "filter": {
+        "education_level": [
+          "pre-primary",
+          "school"
+        ],
+        "aid_type": [
+          "digital-content"
+        ],
+        "benefits_individual": true,
+        "application_required": "none",
+        "max_income": null,
+        "income_criterion": "no-limit",
+        "min_marks_pct": null,
+        "category": [
+          "all"
+        ],
+        "gender": "all",
+        "merit_type": "not-applicable"
+      },
+      "_review": [
+        "No cash benefit. Multilingual content here is a strong asset for the multi-language requirement in the website spec - DIKSHA is arguably the right place to send users for translated material."
+      ]
+    },
+    {
+      "id": "SKILL-INDIA",
+      "name": "Skill India Mission (Pradhan Mantri Kaushal Vikas Yojana)",
+      "short_name": "PMKVY / Skill India",
+      "category": "Skill Development & Vocational Training",
+      "ministry": "Ministry of Skill Development and Entrepreneurship",
+      "implementing_body": "National Skill Development Corporation (NSDC)",
+      "launch_year": 2015,
+      "scheme_type": "Centrally Sponsored / Central Sector Scheme",
+      "status": "active",
+      "description": "Flagship skill certification scheme enabling youth to take industry-relevant skill training, with monetary reward on successful completion and assessment, to improve employability.",
+      "coverage_amount": "Free short-term training; monetary reward/certification on successful assessment (amount varies by scheme phase)",
+      "eligibility": "Indian youth (school/college dropouts and unemployed persons primarily); specific age criteria vary by component",
+      "target_beneficiaries": "Unemployed youth, school/college dropouts, existing workers seeking recognition of prior learning",
+      "key_features": [
+        "Short-Term Training (STT) and Recognition of Prior Learning (RPL) components",
+        "Delivered via Pradhan Mantri Kaushal Kendras (PMKKs)",
+        "Sector-specific skill councils define training standards"
+      ],
+      "official_website": "https://www.pmkvyofficial.org",
+      "notes": null,
+      "filter": {
+        "education_level": [
+          "diploma/vocational"
+        ],
+        "aid_type": [
+          "skill-training"
+        ],
+        "benefits_individual": true,
+        "application_required": "in-person",
+        "max_income": null,
+        "income_criterion": "unstated",
+        "min_marks_pct": null,
+        "category": [
+          "all"
+        ],
+        "gender": "all",
+        "merit_type": "not-applicable"
+      },
+      "_review": [
+        "Source says 'specific age criteria vary by component' and gives no income figure. income_criterion set to unstated - the eligibility text does imply a need/employment focus but no threshold is stated.",
+        "The monetary reward amount is explicitly 'varies by scheme phase' in the source. Do not print a number; link to the PMKVY portal.",
+        "Add a nearest-PMKK locator - this is the one scheme in the set where offline/in-person access genuinely matters."
+      ]
+    },
+    {
+      "id": "NAPS",
+      "name": "National Apprenticeship Promotion Scheme",
+      "short_name": "NAPS",
+      "category": "Skill Development & Vocational Training",
+      "ministry": "Ministry of Skill Development and Entrepreneurship",
+      "implementing_body": "Directorate General of Training",
+      "launch_year": 2016,
+      "scheme_type": "Central Sector Scheme",
+      "status": "active",
+      "description": "Promotes apprenticeship training by sharing part of the stipend cost with employers and reimbursing basic training costs, encouraging industry to engage apprentices.",
+      "coverage_amount": "Government reimburses 25% of prescribed stipend (up to a cap) directly to apprentices; basic training cost reimbursement to Basic Training Providers",
+      "eligibility": "Establishments engaging apprentices under the Apprentices Act, 1961; apprentices aged 14-35 depending on trade",
+      "target_beneficiaries": "Youth undergoing apprenticeship training; employer establishments",
+      "key_features": [
+        "Direct Benefit Transfer of stipend support to apprentices",
+        "Covers optional trade apprentices alongside designated trades"
+      ],
+      "official_website": "https://www.apprenticeshipindia.gov.in",
+      "notes": null,
+      "filter": {
+        "education_level": [
+          "diploma/vocational"
+        ],
+        "aid_type": [
+          "skill-training"
+        ],
+        "benefits_individual": true,
+        "application_required": "via-employer",
+        "max_income": null,
+        "income_criterion": "unstated",
+        "min_marks_pct": null,
+        "age_min": 14,
+        "age_max": 35,
+        "category": [
+          "all"
+        ],
+        "gender": "all",
+        "merit_type": "not-applicable"
+      },
+      "_review": [
+        "The 25% figure is verbatim from the source. The source also says 'up to a cap' without stating the cap - do not present Rs. amount without it.",
+        "Route is: apprentice -> employer establishment -> portal. A student cannot self-apply. The card must say this or it will generate failed applications."
+      ]
+    },
+    {
+      "id": "NAVODAYA",
+      "name": "Jawahar Navodaya Vidyalaya Scheme",
+      "short_name": "JNV",
+      "category": "Residential/Special Category Schools",
+      "ministry": "Ministry of Education",
+      "implementing_body": "Navodaya Vidyalaya Samiti",
+      "launch_year": 1986,
+      "scheme_type": "Central Sector Scheme",
+      "status": "active",
+      "description": "Runs a network of fully residential, co-educational schools (one per district as far as possible) providing quality modern education, with reservation for rural students, to talented children regardless of family income.",
+      "coverage_amount": "Free education including boarding, lodging, textbooks and uniforms (nominal fee for Class IX-XII students from non-SC/ST/BPL/girl categories)",
+      "eligibility": "Admission via Jawahar Navodaya Vidyalaya Selection Test (JNVST) for Class VI (and lateral entry to Class IX); minimum 75% seats reserved for rural students",
+      "target_beneficiaries": "Talented children, mainly from rural areas, Class VI-XII",
+      "key_features": [
+        "One JNV per district (target), fully residential",
+        "Reservation for SC/ST, girls, and children with disabilities as per norms",
+        "CBSE-affiliated curriculum"
+      ],
+      "official_website": "https://navodaya.gov.in",
+      "notes": null,
+      "filter": {
+        "education_level": [
+          "school"
+        ],
+        "aid_type": [
+          "residential-school",
+          "hostel",
+          "fee-waiver"
+        ],
+        "disability": "eligible",
+        "disability_basis": "Key feature states 'Reservation for SC/ST, girls, and children with disabilities as per norms'.",
+        "benefits_individual": true,
+        "application_required": "entrance-test",
+        "max_income": null,
+        "income_criterion": "no-limit",
+        "min_marks_pct": null,
+        "category": [
+          "all"
+        ],
+        "gender": "all",
+        "merit_type": "merit"
+      },
+      "_review": [
+        "Description explicitly says 'regardless of family income' - income_criterion is no-limit. This scheme should appear for every income band, which is the single most useful 'free education' result in the dataset.",
+        "The 'nominal fee for Class IX-XII' caveat means it is not unconditionally free. Show it.",
+        "JNVST is a competitive test with a rural-residency requirement. Neither is captured by the income/category filter."
+      ]
+    },
+    {
+      "id": "KVS",
+      "name": "Kendriya Vidyalaya Sangathan Scheme",
+      "short_name": "KVS",
+      "category": "Residential/Special Category Schools",
+      "ministry": "Ministry of Education",
+      "implementing_body": "Kendriya Vidyalaya Sangathan",
+      "launch_year": 1963,
+      "scheme_type": "Central Sector Scheme",
+      "status": "active",
+      "description": "Operates a nationwide chain of schools primarily to provide uniform, quality education for children of transferable central government employees (including defence and paramilitary personnel), with admission also open to other categories.",
+      "coverage_amount": "Nominal tuition fee (free for girls up to Class XII in most KVs, and for SC/ST students at primary level per current norms)",
+      "eligibility": "Priority to children of transferable central government/defence/paramilitary employees; remaining seats open to general public as per admission guidelines",
+      "target_beneficiaries": "Children of central government employees and general public (residual seats)",
+      "key_features": [
+        "1,250+ Kendriya Vidyalayas across India and abroad",
+        "Common curriculum (CBSE) minimizing disruption from parental transfers",
+        "Admission via age-based criteria and priority categories, not entrance exam at primary level"
+      ],
+      "official_website": "https://kvsangathan.nic.in",
+      "notes": null,
+      "filter": {
+        "education_level": [
+          "pre-primary",
+          "school"
+        ],
+        "aid_type": [
+          "school-education",
+          "fee-waiver"
+        ],
+        "benefits_individual": true,
+        "application_required": "school",
+        "max_income": null,
+        "income_criterion": "no-limit",
+        "min_marks_pct": null,
+        "category": [
+          "all"
+        ],
+        "gender": "all",
+        "merit_type": "not-applicable"
+      },
+      "_review": [
+        "No income condition, but there IS an employment-priority condition that the filter set cannot express. Add a government_employee_household boolean or this will over-promise to the general public.",
+        "'1,250+' KV count and the fee-concession norms ('per current norms') are volatile - re-verify."
+      ]
+    },
+    {
+      "id": "EKLAVYA",
+      "name": "Eklavya Model Residential Schools Scheme",
+      "short_name": "EMRS",
+      "category": "Residential/Special Category Schools",
+      "ministry": "Ministry of Tribal Affairs",
+      "implementing_body": "National Education Society for Tribal Students (NESTS)",
+      "launch_year": 1997,
+      "scheme_type": "Centrally Sponsored Scheme",
+      "status": "active",
+      "description": "Establishes residential schools for Scheduled Tribe (ST) students to provide quality education comparable to Navodaya Vidyalayas, aiming for at least one EMRS in every block with more than 50% ST population.",
+      "coverage_amount": "Free residential education including boarding and lodging",
+      "eligibility": "Scheduled Tribe students, primarily from Class VI onward",
+      "target_beneficiaries": "Scheduled Tribe students in blocks with significant tribal population",
+      "key_features": [
+        "Target of 740+ EMRS across India",
+        "CBSE-pattern curriculum with focus on preserving tribal culture and heritage",
+        "Managed centrally by NESTS since 2019 restructuring"
+      ],
+      "official_website": "https://tribal.nic.in/EMRS.aspx",
+      "notes": null,
+      "filter": {
+        "education_level": [
+          "school"
+        ],
+        "aid_type": [
+          "residential-school",
+          "hostel",
+          "fee-waiver"
+        ],
+        "benefits_individual": true,
+        "application_required": "none",
+        "max_income": null,
+        "income_criterion": "no-limit",
+        "min_marks_pct": null,
+        "category": [
+          "ST"
+        ],
+        "gender": "all",
+        "merit_type": "not-applicable"
+      },
+      "_review": [
+        "Fully free residential education with no income test - the strongest 'no income needed' result in the dataset, but only for ST students. The category filter is the only thing standing between a user and this scheme, so it must not be optional.",
+        "Availability is limited to blocks with >50% ST population. A user outside such a block will see this as a false positive. Consider a state/district field to check availability."
+      ]
+    },
+    {
+      "id": "PMMVY-EDU-NOTE",
+      "name": "Central Sector Interest Subsidy Scheme",
+      "short_name": "CSIS",
+      "category": "Higher Education - Access & Loans",
+      "ministry": "Ministry of Education (Dept. of Higher Education)",
+      "implementing_body": "Banks / Vidya Lakshmi Portal",
+      "launch_year": 2009,
+      "scheme_type": "Central Sector Scheme",
+      "status": "active",
+      "description": "Provides full interest subsidy during the moratorium period (course duration plus one year, or 6 months after getting a job, whichever is earlier) on education loans for professional/technical courses in India, for economically weaker students. Now integrated with PM-USP.",
+      "coverage_amount": "Full interest subsidy during moratorium period on loans up to Rs. 10 lakh",
+      "eligibility": "Family income up to Rs. 4.5 lakh per annum; first-time borrower for professional/technical course in India under the Model Education Loan Scheme",
+      "target_beneficiaries": "Economically weaker students taking education loans for professional/technical courses",
+      "key_features": [
+        "Interest subsidy credited directly to the loan account",
+        "Applied for via the Vidya Lakshmi Portal / now PM Vidyalaxmi portal",
+        "One-time benefit, not available if already availing another interest subsidy scheme"
+      ],
+      "official_website": "https://www.vidyalakshmi.co.in",
+      "notes": null,
+      "filter": {
+        "education_level": [
+          "undergraduate",
+          "postgraduate"
+        ],
+        "aid_type": [
+          "loan-subsidy"
+        ],
+        "benefits_individual": true,
+        "application_required": "online",
+        "max_income": 450000,
+        "income_criterion": "limit-known",
+        "min_marks_pct": null,
+        "first_time_borrower_only": true,
+        "category": [
+          "all"
+        ],
+        "gender": "all",
+        "merit_type": "means"
+      },
+      "_review": [
+        "max_income 450000 derived verbatim from 'Family income up to Rs. 4.5 lakh per annum'.",
+        "id PMMVY-EDU-NOTE is a copy-paste artefact from the PMMVY (health) dataset. This is an education record. Rename to CSIS.",
+        "This record overlaps PM-USP, which the source itself states ('Now integrated with PM-USP'). Two separate cards for one benefit is confusing. Mark one as the parent and the other as subsumed rather than listing both as equal matches.",
+        "'One-time benefit, not available if already availing another interest subsidy scheme' is a hard exclusion. A student already on PM-USP will double-claim. Surface this on the card."
+      ]
+    }
+  ]
+}
