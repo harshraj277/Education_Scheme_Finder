@@ -598,17 +598,22 @@ mark { background: var(--gold-200); color: inherit; border-radius: 2px; padding:
 .scheme-card__foot .btn-link:only-child { flex: 0 0 auto; }
 
 .save-btn {
-  width: 40px; height: 40px; flex: 0 0 40px;
+  width: 30px; height: 30px; flex: 0 0 30px;
   display: grid; place-items: center; border-radius: var(--r-md);
   border: 1px solid var(--border); color: var(--text-subtle);
   background: var(--surface);
-  /* Raised above the badge row. The flex `flex: 0 0 40px` already stops it
+  /* Raised above the badge row. The flex `flex: 0 0 30px` already stops it
      shrinking; this stops a long category badge painting over it if the badge
      ever outgrows its box again. */
   position: relative; z-index: 1;
   transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease),
               background-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
 }
+/* This needs an explicit size. `icon()` emits a viewBox with no width/height
+   attributes, so the default sizing algorithm hands the SVG the full width of
+   its containing block — the glyph was filling the whole tile edge to edge with
+   no padding at all. 15px matches `.chip svg` and `.fgroup__title svg`. */
+.save-btn svg { width: 15px; height: 15px; }
 .save-btn:hover { border-color: var(--gold-400); color: var(--gold-600); background: var(--gold-100); }
 [data-theme="dark"] .save-btn:hover { background: var(--surface-muted); }
 .save-btn[aria-pressed="true"] { color: var(--gold-600); border-color: var(--gold-400); background: var(--gold-100); }

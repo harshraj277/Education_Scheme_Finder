@@ -5,11 +5,12 @@
   "description": "Central government education scheme finder. Static, no build step.",
   "scripts": {
     "start": "python -m http.server 8000",
-    "test": "node _links.cjs && node _css.cjs && node _imgdims.cjs && node _smoke.cjs",
+    "test": "node _links.cjs && node _css.cjs && node _imgdims.cjs && node _smoke.cjs && node _dark.cjs",
     "test:static": "node _links.cjs",
     "test:css": "node _css.cjs",
     "test:img": "node _imgdims.cjs",
     "test:dom": "node _smoke.cjs",
+    "test:dark": "node _dark.cjs",
     "audit": "node _data.cjs"
   },
   "devDependencies": {

@@ -112,7 +112,7 @@ npm install jsdom     # dev dependency only; not needed to run the site
 npm test
 ```
 
-Four files, run in this order:
+Five files, run in this order:
 
 - **`_links.cjs`** — static checks that need no DOM. Verifies every i18n key
   the code asks for exists in both `en` and `hi` (and that no key is dead),
@@ -144,6 +144,15 @@ Four files, run in this order:
   page heads and the scheme card's structure, and runs accessibility spot checks
   (accessible names, landmarks, no positive tabindex, no inline handlers, one
   `h1` per page).
+- **`_dark.cjs`** — inlines both stylesheets as one `<style>`, switches to dark,
+  and measures the WCAG contrast that actually results. It exists because of a
+  bug the other suites structurally could not see: `_css.cjs` parses the
+  stylesheets but never runs a cascade, and `_smoke.cjs` boots the DOM with no
+  stylesheets at all. It asserts contrast ratios and luminance bands rather than
+  exact colours, so it keeps holding if a colour is re-picked for a good reason —
+  but a fix that leaves the text unreadable still fails. Verified to fail on the
+  original bug: it reports the navbar and the gold CTA collapsing to `#A9BEDC` and
+  "Find My Schemes" at 1.01:1.
 - **`_data.cjs`** — prints every `_review` note grouped by problem type, for
   triaging outstanding data work.
 
@@ -187,11 +196,19 @@ with gold `#D8A52C`, a navy header bar closed by a 2px gold rule, a navy hero
 with a gold bloom, a dotted wash and a slowly turning gold ring, and light /
 navy bands alternating down the home page.
 
-Two rules keep that theme honest, and both are enforced by `_css.cjs`:
+Three rules keep that theme honest, and all three are enforced by `_css.cjs`:
 
 - **The navy header is navy in both themes.** The brand bar is part of the
   identity, not a surface that follows the page, so every control inside it is
   painted for navy explicitly rather than inheriting page tokens.
+- **Fixed-navy surfaces use literal hex, not `--navy-600`/`--navy-700`.** Those
+  two tokens are remapped on dark (`#A9BEDC`/`#C6D6EB`) because they mean "a
+  blue that reads as *text* on the page background". A bar is not that. The
+  header once followed them, so on dark it turned pale blue while everything
+  inside it stayed painted white for navy — white text on a near-white bar. That
+  is a bug that shipped, which is why `_css.cjs` now fails if any of
+  `.site-header`, `.hero`, `.band-navy` or `.site-footer` names one of those
+  tokens in its background.
 - **Only the type on a navy band changes.** Cards stay white, so each card that
   appears on a band sets its own ink — otherwise a card's own `<strong>` would
   inherit the band's white and vanish. The recolour rules are scoped to
@@ -200,6 +217,23 @@ Two rules keep that theme honest, and both are enforced by `_css.cjs`:
 
 Neither band follows the theme. Inverting them on dark mode would undo the
 alternation the layout depends on.
+
+### Why the dark link rule is wrapped in `:where()`
+
+The second half of the same bug was specificity. Written plainly,
+`[data-theme="dark"] a` scores 0-1-1, which out-specifies every single-class
+component colour in `app.css` (`.nav-link`, `.btn-accent`, `.btn-secondary`,
+`.skip-link`, all 0-1-0). In dark mode those silently lost their own paint and
+fell back to the bare link colour — a *light* blue, legible on the dark page
+background and effectively invisible on the navy bar and on gold. "Find My
+Schemes" measured 1.01:1.
+
+The rule is now `:where([data-theme="dark"]) a`, which is specificity 0-0-1 —
+level with the light-theme `a` rule beside it, so components win by default. The
+rules that genuinely do need to beat a component are written at 0-2-0 and still
+do. When adding a theme-level override for a component, wrap the theme part in
+`:where()` or give the whole selector 0-2-0; a bare attribute selector will beat
+the component and you will not notice until someone switches themes.
 
 The five inner pages open with a shared `.page-head`: a small gold `.eyebrow`
 over the title over the subtitle, centred. `.eyebrow` is a standalone class

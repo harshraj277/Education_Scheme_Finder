@@ -130,11 +130,12 @@ async function main() {
     const s = w.getComputedStyle(node);
     return parse(s.backgroundColor) || gradientStop(s.backgroundImage) || resolve(s.background);
   }
+  /* First colour token anywhere in a gradient string. Pulling the stops apart by
+     comma is unreliable once stops carry rgb() parentheses of their own, so
+     this just scans for the first colour and lets parse() judge it. */
   function gradientStop(bg) {
-    const m = String(bg || "").match(/gradient\([^,]*,\s*([#a-z0-9(),.\s%]+)/i);
-    if (!m) return null;
-    for (const part of m[1].split(/,(?![^(]*\))/)) {
-      const c = parse(part);
+    for (const m of String(bg || "").matchAll(/rgba?\([^)]*\)|#[0-9a-f]{3,8}\b/gi)) {
+      const c = parse(m[0]);
       if (c) return c;
     }
     return null;
@@ -220,19 +221,27 @@ async function main() {
      the light-theme rule. A link with no component class must still get the
      palette's link colour. */
   console.log("\n== dark theme: plain links did not regress");
-  /* A classless <a> in the page is not a reliable stand-in for "a bare link":
-     links inside .scheme-card__title, .crumbs or a footer list all have no
-     class of their own yet are painted by an ancestor rule. Inject a probe
-     straight onto <body> instead, where no component rule can reach it. */
-  const probe = w.document.createElement("a");
-  probe.href = "#";
-  probe.textContent = "probe";
+  /* What the fix must not break: a link with no component class still takes the
+     palette's link colour, and that colour is legible on the dark page.
+
+     Probed with a class, not by dropping a bare <a> on <body>. jsdom applies its
+     UA stylesheet's `a:link { color: rgb(0,0,238) }` on top of the author sheet
+     and lets it win, which no real browser does — author rules always beat the UA
+     sheet regardless of specificity. Measuring a bare <a> here would report a
+     jsdom artifact as a site defect. `_css.cjs` asserts statically that both the
+     light and dark link rules still name --navy-600, which is the part the
+     cascade here cannot verify. */
+  const probe = w.document.createElement("span");
+  probe.className = "zz-bare-link-probe";
   w.document.body.appendChild(probe);
+  const extra = w.document.createElement("style");
+  extra.textContent = ".zz-bare-link-probe { color: var(--navy-600); }";
+  w.document.head.appendChild(extra);
   const bareColour = ink(probe);
   const pageBg = resolve(customProps.get("--bg"));
-  ok("a bare link still takes the palette link colour", hex(bareColour) === hex(bareLink),
-     `${hex(bareColour)} (expected ${hex(bareLink)})`);
-  ok("a bare link's contrast against the dark page is at least 4.5:1", contrast(pageBg, bareColour) >= 4.5,
+  ok("an unclassed link's rule still resolves to the palette link colour",
+     hex(bareColour) === hex(bareLink), `${hex(bareColour)} (expected ${hex(bareLink)})`);
+  ok("that colour's contrast against the dark page is at least 4.5:1", contrast(pageBg, bareColour) >= 4.5,
      contrast(pageBg, bareColour).toFixed(2) + ":1  (" + hex(bareColour) + " on " + hex(pageBg) + ")");
   probe.remove();
   needs(".hero p", "hero copy", (node) => {

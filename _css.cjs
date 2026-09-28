@@ -196,6 +196,58 @@ decl(".logo-mark", "width", "40px", "the mark stays a fixed size next to the nam
 decl(".logo-mark", "height", "40px", "the mark is square, so the clip is a circle");
 decl(".logo-mark img", "object-fit", "contain", "the artwork is never stretched by the clip");
 
+console.log("== icon-only controls must size their icon");
+/* `icon()` emits an SVG carrying only a viewBox — no width/height attributes.
+   With nothing to size it, the default algorithm hands it the full width of its
+   containing block, so the glyph runs edge to edge with no padding. Every
+   icon-only button in the card needs an explicit size. */
+ok("the save button sizes its icon", has(".save-btn svg", "width") && has(".save-btn svg", "height"),
+   "an unsized icon fills its whole tile");
+decl(".save-btn svg", "width", "15px", "the save glyph is not a full-bleed blob");
+decl(".save-btn svg", "height", "15px", "the save glyph is square, like its viewBox");
+decl(".save-btn", "width", "30px", "the save tile is compact");
+decl(".save-btn", "height", "30px", "the save tile is square, so the border is even");
+/* WCAG 2.2 SC 2.5.8 asks for 24x24 minimum. */
+const saveBox = parseInt(value(".save-btn", "width"), 10);
+ok("the save target still clears the 24px minimum", saveBox >= 24, `${saveBox}px`);
+
+console.log("== the dark link rule must not out-specify component colours");
+/* `[data-theme="dark"] a` scores 0-1-1. Every single-class component colour in
+   app.css is 0-1-0, so a plain attribute selector here silently beat `.nav-link`,
+   `.btn-accent`, `.btn-secondary` and `.skip-link` — in dark mode those lost their
+   own paint and fell back to the bare link colour, which is a LIGHT blue on this
+   palette. That put #A9BEDC on the gold CTA (1.01:1) and on the brand bar. The
+   rule is now :where()-wrapped to 0-0-1, level with the light-theme rule beside
+   it, and the rules that genuinely need to beat a component are written at 0-2-0
+   and still do. */
+const darkLink = ':where([data-theme="dark"]) a';
+ok(`the dark link rule is specificity-zeroed  (${darkLink})`, has(darkLink, "color"));
+ok("it still sets the palette link colour", value(darkLink, "color") === "var(--navy-600)");
+ok("the unwrapped form is gone  ([data-theme=\"dark\"] a)", !has('[data-theme="dark"] a', "color"),
+   "restoring it re-breaks the navbar and the gold CTA");
+ok("component link colours out-specify it",
+   winner("color", ["a", darkLink, ".nav-link"]) === ".nav-link",
+   `winner for color among a / ${darkLink} / .nav-link is ${winner("color", ["a", darkLink, ".nav-link"])}`);
+ok("and the gold CTA too",
+   winner("color", ["a", darkLink, ".btn-accent"]) === ".btn-accent",
+   `winner for color is ${winner("color", ["a", darkLink, ".btn-accent"])}`);
+
+console.log("== fixed-navy surfaces must not follow theme-swapped tokens");
+/* --navy-600/--navy-700 are remapped on dark because they mean "a blue that reads
+   as text on the page background". The brand bar, the hero and the navy bands are
+   not page backgrounds — they are fixed navy in both themes, and their contents
+   are all painted for navy. When the bar followed the tokens it inverted to a
+   pale blue while its contents stayed white, which is the bug this suite exists
+   to catch. */
+const INVERTING = ["--navy-600", "--navy-700"];
+for (const sel of [".site-header", ".hero", ".band-navy", ".site-footer"]) {
+  const v = value(sel, "background") || "";
+  const used = INVERTING.filter((tok) => v.includes(`var(${tok})`));
+  used.length === 0
+    ? ok(`${sel} is not painted with an inverting token`)
+    : bad(`${sel} background follows ${used.join(", ")} — it will go pale on dark`);
+}
+
 console.log("== no selectors left behind by removed markup");
 /* The hero chip row and .chips--scroll were deleted along with it. A rule that
    styles `.hero .chip` can never match again, so it is dead weight that reads
