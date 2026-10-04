@@ -17,9 +17,22 @@ function ok(name, cond, extra) {
 }
 function section(s) { console.log("\n== " + s); }
 
+/* Explore is paginated at 9 cards, so the number of .scheme-card nodes on screen
+   is no longer a proxy for "how many results matched" -- it saturates at 9.
+   Anything reasoning about filter behaviour must read the total out of the count
+   line instead, which is also what a user reads. */
+function resultTotal(doc) {
+  const m = (doc.querySelector("#resultCount") || {}).textContent || "";
+  const hit = m.match(/(\d[\d,]*)\s*(?:योजन|schemes?)/i);
+  return hit ? Number(hit[1].replace(/,/g, "")) : NaN;
+}
+function cardCount(doc) {
+  return doc.querySelectorAll("#results .scheme-card").length;
+}
+
 /* ---------- dataset sanity ------------------------------------------------ */
 section("dataset");
-ok("24 schemes", DATA.schemes.length === 24, DATA.schemes.length);
+ok("103 schemes", DATA.schemes.length === 103, DATA.schemes.length);
 ok("every record has filter", DATA.schemes.every(s => s.filter));
 ok("every record has _review array", DATA.schemes.every(s => Array.isArray(s._review)));
 ok("every record has official_website",
@@ -171,7 +184,7 @@ section("index.html");
      missingCat.join("; ") || facetCats.length + " areas offered");
   w2.close();
   ok("featured cards rendered", doc.querySelectorAll("#featuredGrid .scheme-card").length === 6);
-  ok("trust strip shows 24", /\b24\b/.test(doc.querySelector("#trustStrip").textContent));
+  ok("trust strip shows 103", /\b103\b/.test(doc.querySelector("#trustStrip").textContent));
   ok("disclaimer visible in DOM",
     /changes periodically|change periodically|Verify on official/i.test(doc.querySelector("#homeNotice").textContent));
   ok("dataset gap list surfaced",
@@ -205,10 +218,10 @@ section("explore.html");
   ok("filter sidebar rendered", !!doc.querySelector("#filters"));
   const nInst = DATA.schemes.filter(s => s.filter.benefits_individual === false).length;
   const nIndividual = DATA.schemes.length - nInst;
-  const n0 = doc.querySelectorAll("#results .scheme-card").length;
+  const n0 = cardCount(doc);
   ok("results render", n0 > 0, n0 + " cards");
-  ok("default hides exactly the institutional records", n0 === nIndividual,
-     n0 + " of 24 (" + nInst + " institutional hidden)");
+  ok("default hides exactly the institutional records", resultTotal(doc) === nIndividual,
+     resultTotal(doc) + " of " + DATA.schemes.length + " (" + nInst + " institutional hidden)");
 
   /* facet checkbox filtering */
   const catBox = [...doc.querySelectorAll("#filters [data-facet='categories']")][0];
@@ -218,22 +231,22 @@ section("explore.html");
   if (!catBox) throw new Error("no category facet options rendered");
   catBox.checked = true;
   catBox.dispatchEvent(new w.Event("change", { bubbles: true }));
-  const n1 = doc.querySelectorAll("#results .scheme-card").length;
-  ok("category filter narrows", n1 > 0 && n1 < n0, n0 + " -> " + n1);
+  const t1 = resultTotal(doc);
+  ok("category filter narrows", t1 > 0 && t1 < nIndividual, nIndividual + " -> " + t1);
   ok("URL synced", /[?&]cat=/.test(w.location.search), w.location.search);
   ok("active filter chip shown", doc.querySelectorAll("#activeFilters .active-filter").length > 0);
 
   /* clearing */
   doc.querySelector("#clearAllBtn").click();
-  ok("clear restores all", doc.querySelectorAll("#results .scheme-card").length === n0);
+  ok("clear restores all", resultTotal(doc) === nIndividual, resultTotal(doc) + " results");
 
   /* institutional toggle reveals the hidden ones */
   const instBox = doc.querySelector("#filters [data-toggle='includeInstitutional']");
   instBox.checked = true;
   instBox.dispatchEvent(new w.Event("change", { bubbles: true }));
   ok("institutional toggle reveals records",
-     doc.querySelectorAll("#results .scheme-card").length === 24,
-     doc.querySelectorAll("#results .scheme-card").length);
+     resultTotal(doc) === DATA.schemes.length,
+     resultTotal(doc) + " of " + DATA.schemes.length);
   w.close();
 }
 
@@ -317,23 +330,28 @@ section("explore.html — income matching");
     return f.max_income >= 100000;
   }).map(s => s.id);
 
-  const shown = [...doc.querySelectorAll("#results .scheme-card")]
+  /* The match set can exceed one page, so compare the TOTAL, and separately
+     confirm that nothing on the visible page violates the rule. */
+  const shownOnPage = () => [...doc.querySelectorAll("#results .scheme-card")]
     .map(c => c.getAttribute("data-scheme"));
   ok("income band matches the documented rule",
-     JSON.stringify(shown.slice().sort()) === JSON.stringify(matched.slice().sort()),
-     "shown " + shown.length + " / expected " + matched.length);
+     resultTotal(doc) === matched.length,
+     "total " + resultTotal(doc) + " / expected " + matched.length);
+  ok("every card on the visible page is in the matched set",
+     shownOnPage().every(id => matched.includes(id)),
+     shownOnPage().length + " cards checked");
   ok("no 'unstated' scheme leaks into a band match",
-     !shown.some(id => {
+     !shownOnPage().some(id => {
        const s = DATA.schemes.find(x => x.id === id);
        return s.filter.income_criterion === "unstated";
      }));
   ok("diagnostic banner offers to widen",
      !!doc.querySelector("[data-act='show-unstated']"));
 
+  const before = resultTotal(doc);
   doc.querySelector("[data-act='show-unstated']").click();
-  const after = [...doc.querySelectorAll("#results .scheme-card")].map(c => c.getAttribute("data-scheme"));
-  ok("widening reveals the unstated ones", after.length > shown.length,
-     shown.length + " -> " + after.length);
+  ok("widening reveals the unstated ones", resultTotal(doc) > before,
+     before + " -> " + resultTotal(doc));
   w.close();
 }
 
@@ -372,6 +390,191 @@ section("scheme.html — institutional record (Samagra)");
   w.close();
 }
 
+/* ---------- Explore pagination ------------------------------------------------
+   Explore shows 9 cards in a 3-up grid at a time instead of the whole set in one
+   long scroll. These pin the behaviour that is easy to break: the page size, the
+   fact that a filter change must not strand the reader on a page that no longer
+   exists, and the fact that only Explore is paginated -- Saved and the home
+   featured row still use the auto-fill grid and must not grow a pager. */
+section("explore.html — pagination");
+{
+  const { w, doc, errors } = await boot("explore.html");
+  const PAGE = 9;
+  const cardIds = () => [...doc.querySelectorAll("#results .scheme-card")]
+    .map(c => c.dataset.scheme);
+  const shownTotal = () => {
+    const m = doc.querySelector("#resultCount").textContent
+      .match(/(\d[\d,]*)\s*(?:योजन|schemes?)/i);
+    return m ? Number(m[1].replace(/,/g, "")) : NaN;
+  };
+
+  ok("no JS errors", errors.length === 0, errors.join(" | "));
+  ok("grid is the fixed 3-up variant, not auto-fill",
+     !!doc.querySelector("#results .card-grid--paged"));
+  ok("shows exactly " + PAGE + " cards", cardIds().length === PAGE, cardIds().length);
+
+  const pages = Math.ceil(shownTotal() / PAGE);
+  ok("pager is rendered when the set needs more than one page", pages > 1,
+     shownTotal() + " results -> " + pages + " pages");
+  ok("prev is disabled on the first page",
+     doc.querySelector('#pager [data-page="0"]').disabled === true);
+  ok("current page is marked", doc.querySelector("#pager [aria-current=\"page\"]")
+     .textContent.trim() === "1");
+
+  /* 9 pages would wrap the pager onto two rows on a phone, so the middle has to
+     collapse into a non-interactive gap. */
+  if (pages > 7) {
+    ok("long pager collapses the middle into a gap",
+       doc.querySelectorAll("#pager .pager__gap").length >= 1,
+       doc.querySelectorAll("#pager .pager__gap").length + " gap marker(s)");
+    ok("gap markers are hidden from assistive tech",
+       [...doc.querySelectorAll("#pager .pager__gap")]
+         .every(g => g.getAttribute("aria-hidden") === "true" && !g.dataset.page));
+    ok("first and last page stay reachable",
+       !!doc.querySelector('#pager [data-page="1"]') &&
+       !!doc.querySelector('#pager [data-page="' + pages + '"]'));
+  }
+
+  /* Page 2 must be a genuinely different slice, not a re-render of page 1. */
+  const p1 = cardIds();
+  doc.querySelector('#pager [data-page="2"]').click();
+  ok("page 2 also shows " + PAGE + " cards", cardIds().length === PAGE, cardIds().length);
+  ok("page 2 shares no records with page 1",
+     !cardIds().some(id => p1.includes(id)));
+  ok("count line reports the visible slice, not just the total",
+     /10\D*18/.test(doc.querySelector("#resultCount").textContent.replace(/\s/g, "")),
+     JSON.stringify(doc.querySelector("#resultCount").textContent.trim()));
+  ok("prev is enabled once off the first page",
+     doc.querySelector('#pager [data-page="1"]').disabled === false);
+
+  /* The last page is short and must not offer a next page. */
+  doc.querySelector('#pager [data-page="' + pages + '"]').click();
+  const remaining = shownTotal() - (pages - 1) * PAGE;
+  ok("last page holds only the remainder", cardIds().length === remaining,
+     cardIds().length + " of " + remaining);
+  ok("next is disabled on the last page",
+     doc.querySelector('#pager [data-page="' + (pages + 1) + '"]').disabled === true);
+
+  /* A filter change must reset to page 1: staying on page 9 of a set that now has
+     two pages would show an empty grid under a live pager. */
+  const catBox = [...doc.querySelectorAll("#filters [data-facet='categories']")][0];
+  catBox.checked = true;
+  catBox.dispatchEvent(new w.Event("change", { bubbles: true }));
+  ok("a filter change returns to page 1",
+     doc.querySelector("#pager[aria-current], #pager [aria-current=\"page\"]") &&
+     (doc.querySelector("#pager").innerHTML === "" ||
+      doc.querySelector('#pager [aria-current="page"]').textContent.trim() === "1"));
+  ok("never more than " + PAGE + " cards are rendered", cardIds().length <= PAGE,
+     cardIds().length + " cards of " + shownTotal());
+
+  /* Narrow to a set that fits one page: the pager must disappear entirely. */
+  const boxes = () => [...doc.querySelectorAll("#filters [data-facet='categories']")];
+  const small = boxes().map(b => ({
+    value: b.value,
+    n: Number(b.closest("label").querySelector(".check__count").textContent)
+  })).filter(x => x.n > 0 && x.n <= PAGE).sort((a, b) => a.n - b.n)[0];
+  ok("dataset has a category that fits one page", !!small, small && small.n + " records");
+  if (small) {
+    /* One dispatch at a time, re-querying between: each change repaints the
+       panel, replacing its nodes, so a single snapshot goes stale immediately. */
+    for (let pass = 0; pass < 20; pass++) {
+      const wrong = boxes().find(b => b.checked !== (b.value === small.value));
+      if (!wrong) break;
+      wrong.checked = wrong.value === small.value;
+      wrong.dispatchEvent(new w.Event("change", { bubbles: true }));
+    }
+    ok("single-page set renders every record", cardIds().length === shownTotal(),
+       cardIds().length + " of " + shownTotal());
+    ok("single-page set shows no pager", doc.querySelector("#pager").innerHTML === "");
+  }
+  w.close();
+
+  /* Only Explore is paginated. */
+  const saved = await boot("saved.html");
+  ok("saved page has no pager", !saved.doc.querySelector("#pager"));
+  ok("saved grid is still auto-fill", !saved.doc.querySelector(".card-grid--paged"));
+  saved.w.close();
+}
+
+/* ---------- verification tier -------------------------------------------------
+   The dataset now mixes two tiers: the original curated records, and records
+   added from a source that never checked them against an official portal. The
+   whole point of shipping the second tier is that it is LABELLED, so these
+   assert the label is actually rendered -- and, just as importantly, that it is
+   NOT applied to the original records, which would wrongly imply those are
+   unverified too. */
+section("verification tier is labelled, and only where it applies");
+{
+  const unv = DATA.schemes.filter(s => s.verification === "unverified");
+  const curated = DATA.schemes.filter(s => !s.verification);
+  ok("dataset actually contains both tiers", unv.length > 0 && curated.length > 0,
+     curated.length + " curated + " + unv.length + " unverified");
+
+  /* every unverified record must SAY SO in the data, not only look that way */
+  const notFlagged = unv.filter(s => s.status !== "unverified");
+  ok("unverified records also carry status:'unverified'", notFlagged.length === 0,
+     notFlagged.map(s => s.id).join(", "));
+  const wrongFlag = curated.filter(s => s.status === "unverified");
+  ok("curated records are not marked unverified", wrongFlag.length === 0,
+     wrongFlag.map(s => s.id).join(", "));
+
+  /* an unverified record must not assert an income limit it never sourced */
+  const inventedCeiling = unv.filter(s =>
+    s.filter.income_criterion === "limit-known" && !/income/i.test(s.eligibility || ""));
+  ok("no income ceiling claimed without one in the eligibility text",
+     inventedCeiling.length === 0, inventedCeiling.map(s => s.id).join(", "));
+
+  /* The label must reach the card. Explore paginates 9 at a time and the default
+     "relevant" sort is dataset order, which puts the 24 curated records first --
+     so page 1 is entirely curated. Walk to the last page to see unverified cards
+     rather than assuming they are on screen. */
+  const { w, doc } = await boot("explore.html");
+  const pages = Math.ceil(resultTotal(doc) / 9);
+  ok("unverified records are not all on page 1",
+     ![...doc.querySelectorAll("#results .scheme-card")]
+       .some(c => unv.some(u => u.id === c.dataset.scheme)),
+     pages + " pages to walk");
+  doc.querySelector('#pager [data-page="' + pages + '"]').click();
+  const badged = [...doc.querySelectorAll("#results .scheme-card")]
+    .filter(c => c.querySelector(".badge-unverified")).length;
+  ok("explore cards badge the unverified records", badged > 0, badged + " cards badged");
+  ok("a curated card is not badged unverified",
+     ![...doc.querySelectorAll("#results .scheme-card")]
+       .some(c => curated.some(k => k.id === c.dataset.scheme) &&
+                       c.querySelector(".badge-unverified")));
+  const origCard = doc.querySelector('[data-scheme="' + curated[0].id + '"]');
+  ok("curated record found on some page and not badged",
+     !origCard || !origCard.querySelector(".badge-unverified"), curated[0].id);
+  w.close();
+
+  /* and the detail page must carry a banner, not just a badge */
+  const u = unv[0];
+  const d2 = await boot("scheme.html", { url: "http://localhost/scheme.html?id=" + u.id });
+  ok("detail page shows the unverified banner",
+     /Unverified record/i.test(d2.doc.body.textContent), u.id);
+  ok("detail page sets a meta description without throwing",
+     !!(d2.doc.querySelector("meta[name=description]") || {}).content);
+  d2.w.close();
+
+  /* curated records must NOT get the banner */
+  const c = curated[0];
+  const d3 = await boot("scheme.html", { url: "http://localhost/scheme.html?id=" + c.id });
+  ok("a curated detail page shows no unverified banner",
+     !/Unverified record/i.test(d3.doc.body.textContent), c.id);
+  d3.w.close();
+}
+
+/* ---------- state-scope records ---------------------------------------------- */
+section("state-scope records are marked as state schemes");
+{
+  const st = DATA.schemes.filter(s => s.scope === "State");
+  ok("dataset contains state-scope records", st.length > 0, st.length + " records");
+  const { w, doc } = await boot("scheme.html", { url: "http://localhost/scheme.html?id=" + st[0].id });
+  ok("detail page says it is a state scheme",
+     /state government scheme/i.test(doc.body.textContent), st[0].id);
+  w.close();
+}
+
 /* ---------- unknown id ------------------------------------------------------ */
 section("scheme.html — bad id");
 {
@@ -397,7 +600,8 @@ section("quick-match.html");
   ok("level selected", doc.querySelector('.opt[data-value="school"]').classList.contains("is-selected"));
   doc.querySelector('[data-act="next"]').click();
   ok("moved to profile", doc.querySelectorAll(".opt").length > 6);
-  ok("state question explains central-only", /central schemes only/i.test(doc.body.textContent));
+  ok("state question explains why it cannot filter",
+     /cannot narrow your results/i.test(doc.body.textContent));
 
   /* walk to results */
   doc.querySelector('.opt[data-key="gender"][data-value="female"]').click();

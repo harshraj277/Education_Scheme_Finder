@@ -45,10 +45,27 @@
       '<div class="detail-badges">' +
         YS.ui.categoryBadge(s) + YS.ui.statusBadge(s) + YS.ui.noAppBadge(s) +
         '<span class="badge badge-neutral">' + esc(YS.store.labelForType(YS.store.typeKey(s))) + "</span>" +
+        YS.ui.unverifiedBadge(s) + YS.ui.scopeBadge(s) +
         YS.ui.unstatedBadge(s) + YS.ui.sourceBadge(s) +
       "</div>" +
       '<h1 class="detail-title">' + esc(s.name) + "</h1>" +
       '<p class="detail-sub">' + esc(s.description) + "</p>" +
+
+      /* An unverified record gets a banner, not just a badge: a badge is easy to
+         miss on a long page, and this is the difference between "here is a fact"
+         and "here is something a person typed from memory". It sits directly
+         under the title, before any eligibility claim. */
+      (YS.ui.isUnverified(s)
+        ? '<div class="notice notice-amber mt-5" style="max-width: 760px" role="note">' +
+          YS.ui.icon("alert") +
+          "<span><strong>" + esc(t("d.unverifiedTitle")) + "</strong> " +
+          esc(t("d.unverifiedBody")) + "</span></div>"
+        : "") +
+
+      (s.scope === "State"
+        ? '<div class="notice notice-navy mt-4" style="max-width: 760px">' + YS.ui.icon("info") +
+          "<span>" + esc(t("d.stateScope")) + "</span></div>"
+        : "") +
 
       '<div class="detail-actions">' +
         '<a class="btn btn-primary" href="' + esc(s.official_website) + '"' +
@@ -248,7 +265,7 @@
     SCHEME = s;
     document.title = s.name + " — Yojana Setu";
     const meta = document.querySelector('meta[name="description"]');
-    if (meta) meta.setAttribute("content", s.description.slice(0, 160));
+    if (meta) meta.setAttribute("content", String(s.description || s.name || "").slice(0, 160));
 
     const body =
       panel("d.overview", '<div class="prose">' + esc(s.description) + "</div>") +

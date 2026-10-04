@@ -74,10 +74,11 @@ page loads.
 
 ## Where the data came from
 
-`data/schemes.enriched.json` holds 24 central government education schemes. It
-is the same 24 records as the `education_schemes.json` in the project root,
-with the original 17 fields carried through verbatim, plus a `filter` object of
-machine-readable fields and a `_review` array of analyst notes.
+`data/schemes.enriched.json` holds 103 education schemes in two tiers. It began
+as the 24 records in the `education_schemes.json` in the project root, with the
+original 17 fields carried through verbatim, plus a `filter` object of
+machine-readable fields and a `_review` array of analyst notes. 79 further
+records were folded in on 2026-10-04 by `info/merge_expanded.cjs`.
 
 Three additions worth knowing about:
 
@@ -90,6 +91,43 @@ Three additions worth knowing about:
 - **`_review`** holds open questions found while building this. They surface on
   each scheme's detail page under "Data notes".
 
+### The two trust tiers
+
+The 79 added records are **not** as trustworthy as the original 24, and the site
+says so on every surface rather than flattening them into one list.
+
+They carry `verification: "unverified"` and `status: "unverified"`, which drives:
+
+- a dashed **Unverified** badge on the card and detail page
+- an amber **banner directly under the scheme title**, above any eligibility text
+- `meta.data_quality.verification_tier`, listing every unverified id
+
+Their source file states outright that they were *"added from general knowledge
+and are NOT live-verified"*. Benefit amounts, eligibility and dates on those
+records may be wrong or out of date, so the site labels them and never asserts
+eligibility for them. A record only earns `income_criterion: "limit-known"` when
+its own eligibility text literally states a ceiling — a rupee figure in
+`coverage_amount` is the *benefit*, not an income limit, and is never used as one.
+
+`_smoke.cjs` asserts both directions of this: unverified records must be badged,
+and the curated records must **not** be, since badging those would imply they
+are unverified too.
+
+### Re-running the merge
+
+```
+node info/merge_expanded.cjs
+```
+
+Idempotent — a second run adds nothing. It matches on the derived slug as well as
+the source id, because the ids it writes are slugs built from the scheme name
+(`X025` becomes `AICTE-PRAGATI-SCHOLARSHIP-FOR-GIRLS`), so matching on the source
+id alone would append every record a second time on re-run.
+
+The 24 curated records are kept **verbatim**. The expanded source had rewritten
+21 of their `category` values into its own vocabulary and dropped every `filter`
+block, so its copy of those 24 is strictly worse than what was already here.
+
 ### Things the dataset does not contain
 
 These are absent from the source, and this app does not invent them:
@@ -97,13 +135,27 @@ These are absent from the source, and this app does not invent them:
 `documents_required` · `application_deadline` · `application_link` ·
 `helpline` · `state` · `renewal_conditions` · `last_verified_date`
 
+The expanded source *does* populate several of these, but only with placeholder
+prose ("Not recorded. Check the official portal."). They are dropped rather than
+migrated: carrying placeholder text into a field the frontend is forbidden to
+render would be worse than leaving it empty.
+
 Wherever a page would naturally show one of these, it states plainly that the
 dataset does not have it. That is why there is no Apply button anywhere in the
 app: `application_link` does not exist, so the only outbound action offered is
 the scheme's own official website, taken from the record.
 
-The dataset is also central-scheme only. State schemes are out of scope by
-design, which the quick-match wizard says when it asks about your state.
+### State schemes
+
+The dataset was central-scheme only by design; it now also carries 16
+**state**-scope records, each marked `scope: "State"` and badged **State scheme**,
+with a notice on the detail page saying availability depends on your state.
+
+Two records the source marked `scope: "State"` were reclassified as Central
+because they merely *target* a region while being administered by a central body
+(PM Special Scholarship via AICTE, Ishan Uday via UGC). A state scheme is
+administered by that state, so the ministry is the reliable signal, not the
+region served. Both carry a `_review` note explaining the change.
 
 ## Tests
 

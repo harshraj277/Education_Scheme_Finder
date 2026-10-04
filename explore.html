@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#FFFFFF">
 <title>Explore education schemes — Yojana Setu</title>
-<meta name="description" content="Filter 24 central government education schemes by level, benefit type, income ceiling and beneficiary category.">
+<meta name="description" content="Filter 103 government education schemes by level, benefit type, income ceiling and beneficiary category.">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -68,7 +68,7 @@
 
       <div class="explorer">
 
-        <!-- ============ FILTER SIDEBAR / BOTTOM SHEET ============ -->
+        <!-- ============ FILTER PANEL / BOTTOM SHEET ============ -->
         <aside class="filters" id="filters" aria-label="Filters">
           <div class="filters__head">
             <h2 data-i18n="explore.filters">Filters</h2>
@@ -76,13 +76,19 @@
                     data-i18n="btn.clear">Clear all</button>
           </div>
 
-          <div id="filterBody"></div>
+          <!-- .filters__collapse is the vertical expand/contract target on desktop;
+               on mobile it stays a plain block so the drawer keeps its own slide. -->
+          <div class="filters__collapse">
+            <div class="filters__collapse-inner">
+              <div id="filterBody"></div>
 
-          <div class="filters__foot">
-            <button type="button" class="btn btn-secondary" id="clearAllBtn2"
-                    data-i18n="btn.clearFilters">Clear</button>
-            <button type="button" class="btn btn-primary btn--apply" id="applyBtn"
-                    data-i18n="btn.apply">Apply Filters</button>
+              <div class="filters__foot">
+                <button type="button" class="btn btn-secondary" id="clearAllBtn2"
+                        data-i18n="btn.clearFilters">Clear</button>
+                <button type="button" class="btn btn-primary btn--apply" id="applyBtn"
+                        data-i18n="btn.apply">Apply Filters</button>
+              </div>
+            </div>
           </div>
         </aside>
         <div class="scrim" id="filterScrim"></div>
@@ -101,6 +107,10 @@
           <div id="diagBanner"></div>
 
           <div id="results" aria-live="polite" aria-busy="true"></div>
+          <!-- Pager is a sibling of #results, not a child: #results is an
+               aria-live region, and putting page controls inside it would make a
+               screen reader announce the whole pager on every repaint. -->
+          <nav class="pager" id="pager" aria-label="Results pages"></nav>
         </section>
 
       </div>

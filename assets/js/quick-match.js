@@ -3,8 +3,9 @@
    Five-step wizard.
 
    The wizard never claims a match it cannot support. Two consequences:
-   - "State" is asked but cannot filter anything: the dataset is central-only,
-     so the step explains that instead of pretending to narrow results.
+   - "State" is not asked at all. The dataset now carries a few state schemes,
+     but it does not record which state each one serves, so asking would promise
+     a narrowing the data cannot deliver. The step explains that instead.
    - A "No" answer to disability does NOT filter to "unstated". "unstated"
      means the dataset is silent, which is not the same as "no provision",
      so filtering on it would hide the three schemes that do name one.
@@ -94,7 +95,7 @@
       ["general", "qm.catGeneral"], ["SC", "qm.catSC"], ["ST", "qm.catST"],
       ["OBC", "qm.catOBC"], ["EBC", "qm.catEBC"], ["DNT", "qm.catDNT"],
       ["minority", "qm.catMinority"]
-    ].map((c) => opt("cat", c[0], t(c[1]), c[0] === "general" ? "•" : c[0])).join("");
+    ].map((c) => opt("cat", c[0], t(c[1]))).join("");
 
     const dis = [
       opt("disability", "yes", t("qm.disYes"), "✓"),

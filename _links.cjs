@@ -200,7 +200,7 @@ data.schemes.forEach(s => {
     });
 });
 if (missing.length) bad("records with missing required fields: " + missing.join(", "));
-else good("all 24 records carry every required field");
+else good("all " + data.schemes.length + " records carry every required field");
 
 /* income_criterion must agree with max_income */
 const inconsistent = data.schemes.filter(s => {
@@ -210,7 +210,7 @@ const inconsistent = data.schemes.filter(s => {
   return false;
 }).map(s => s.id);
 if (inconsistent.length) bad("income_criterion disagrees with max_income: " + inconsistent.join(", "));
-else good("income_criterion and max_income agree on all 24 records");
+else good("income_criterion and max_income agree on all " + data.schemes.length + " records");
 
 console.log("\n" + (problems === 0 ? "NO PROBLEMS FOUND" : problems + " PROBLEM(S) FOUND"));
 process.exit(problems === 0 ? 0 : 1);

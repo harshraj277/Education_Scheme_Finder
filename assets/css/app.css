@@ -64,14 +64,14 @@
 .site-header.is-scrolled { box-shadow: 0 4px 22px rgba(9, 38, 74, 0.3); }
 .header-inner {
   width: 100%; max-width: var(--maxw); margin-inline: auto;
-  padding-inline: var(--sp-6);
+  padding-inline: clamp(var(--sp-3), 3vw, var(--sp-6));
   display: flex; align-items: center; gap: var(--sp-6);
 }
 @media (max-width: 767px) { .header-inner { padding-inline: var(--sp-4); gap: var(--sp-3); } }
 
 /* Nav items are white-on-navy. A transparent border is always present and only
    coloured on hover, so underlining an item does not shift the row by 2px. */
-.nav { display: flex; align-items: center; gap: 6px; margin-left: var(--sp-4); }
+.nav { display: flex; align-items: center; gap: 6px; }
 .nav-link {
   position: relative;
   padding: 7px 1px;
@@ -89,6 +89,26 @@
 }
 .header-actions { margin-left: auto; display: flex; align-items: center; gap: var(--sp-2); }
 @media (max-width: 1099px) { .nav { display: none; } }
+
+/* Desktop only: hold the logo alone against the left edge and push the nav +
+   action cluster as one group against the right, so the empty space collects in
+   the middle instead of leaving the nav glued to the logo.
+
+   The auto margin has to MOVE rather than be added. .nav and .header-actions
+   cannot both carry one -- flexbox divides the free space between competing auto
+   margins, which would strand the nav in the centre and push the icons off the
+   right edge on their own. So the nav takes the auto margin here and
+   .header-actions gives it up.
+
+   Scoped to this band on purpose: below 1100px .nav is display:none, so its auto
+   margin would apply to nothing and the actions would fall back on the base
+   .header-actions margin -- which is what keeps them pinned right on mobile. */
+@media (min-width: 1100px) {
+  .nav { margin-left: auto; }
+  /* A touch more than the row's own --sp-6 gap, so the nav links read as a group
+     and the icon buttons as a separate one, instead of one continuous cluster. */
+  .header-actions { margin-left: var(--sp-5); }
+}
 
 /* Controls that sit on the navy bar are painted for navy, in both themes. The
    light-theme values are deliberately restated rather than inherited, because
@@ -217,6 +237,19 @@
    Deliberately NOT called "Verified": we have not verified the content. */
 .badge-source { background: transparent; color: var(--text-muted); border-color: var(--border-strong); }
 
+/* "Unverified" badge — the record came from a source compilation that never
+   checked it against its official portal. Deliberately loud: it sits next to
+   the category badge so a user comparing two cards can see at a glance which of
+   the two is on firmer ground. Outlined amber rather than the filled amber of
+   .badge-amber, because that one means "check the income figure" — a narrower
+   and much milder claim — and the two should not read as the same warning. */
+.badge-unverified {
+  background: transparent; color: var(--amber-700);
+  border-color: var(--amber-500); border-style: dashed;
+}
+[data-theme="dark"] .badge-unverified { color: var(--amber-600); border-color: var(--amber-500); }
+.badge-unverified svg { width: 12px; height: 12px; }
+
 /* ---------- Notice bars --------------------------------------------------- */
 
 .notice {
@@ -275,11 +308,17 @@
 @keyframes ys-ring-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .hero::after { animation: none; } }
 
-.hero .wrap { position: relative; z-index: 1; }
+.hero .wrap { position: relative; z-index: 1; width: 100%; }
 /* Wider than the 840px the hero used before the CTAs moved onto this row: the
    bar and two buttons now share the width, and at 840 the bar was squeezed to
    roughly half. */
-.hero-inner { max-width: 940px; }
+.hero-inner { max-width: 940px; margin-inline: auto; text-align: center; }
+/* Once the container itself starts growing, 940px leaves the hero sitting as a
+   small centred island inside a much wider band, with the search row visibly
+   narrower than the card grid directly below it. Let it track the wider
+   container, stopping short of the full inner measure so the headline keeps its
+   line breaks and the sub-copy stays on its max-width:58ch. */
+@media (min-width: 1440px) { .hero-inner { max-width: 1080px; } }
 
 /* The eyebrow is outlined in the logo's gold, not filled: a pale pill on navy
    is the wrong weight and reads as a stray chip. */
@@ -303,7 +342,7 @@
 .hero h1 .accent::after { content: none; }
 .hero-sub {
   margin-top: var(--sp-4); font-size: clamp(16px, 2.1vw, 18.5px);
-  color: #cfdcef; max-width: 58ch; line-height: 1.6;
+  color: #cfdcef; max-width: 58ch; line-height: 1.6; margin-inline: auto;
 }
 /* The search bar and the two CTAs sit on one row. The bar takes all the slack
    (flex:1) so it stays the wide element; the buttons keep their intrinsic
@@ -311,15 +350,15 @@
    is what lines the buttons up with the search field's own 60px min-height. */
 .hero-row {
   display: flex; align-items: stretch; gap: var(--sp-3);
-  margin-top: var(--sp-6);
+  margin-top: var(--sp-6); justify-content: center;
 }
 .hero-row__search { flex: 1 1 auto; min-width: 0; display: flex; }
 .hero-row .searchbar { flex: 1 1 auto; min-width: 0; margin-top: 0; max-width: none; }
 
 .hero-cta { display: flex; align-items: stretch; gap: var(--sp-3); flex: 0 0 auto; }
 .hero-row .hero-cta .btn {
-  min-height: 60px; padding-inline: var(--sp-5);
-  font-size: 15.5px; white-space: nowrap;
+  min-height: 60px; padding-inline: clamp(var(--sp-2), 2vw, var(--sp-5));
+  font-size: clamp(14px, 2vw, 15.5px); white-space: nowrap;
 }
 
 /* The secondary CTA is outlined, not filled: two solid buttons side by side
@@ -461,9 +500,10 @@ mark { background: var(--gold-200); color: inherit; border-radius: 2px; padding:
 /* Sits on the navy hero, so it is painted for navy. A top border is a light
    translucent rule rather than a page-border token, which would be invisible. */
 .trust {
-  display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-4) var(--sp-6);
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--sp-4) var(--sp-6);
   margin-top: var(--sp-10); padding-top: var(--sp-6);
   border-top: 1px solid rgba(255, 255, 255, 0.18);
+  text-align: center;
 }
 .trust-item { display: flex; align-items: baseline; gap: var(--sp-2); }
 .trust-num { font-size: 22px; font-weight: 800; color: var(--gold-500); letter-spacing: -0.02em; }
@@ -479,6 +519,53 @@ mark { background: var(--gold-200); color: inherit; border-radius: 2px; padding:
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
 }
 @media (max-width: 400px) { .card-grid { grid-template-columns: 1fr; } }
+
+/* The paged grid on Explore. Deliberately NOT the base .card-grid: that one is
+   auto-fill and is shared by the home featured row, Saved, Quick Match and the
+   related-schemes strip, where "whatever fits" is the right answer. Explore is
+   the one place a fixed 3-up matters, because it is paginated 9 at a time and a
+   row that ended mid-group looked like a rendering fault.
+
+   The filter panel is a full-width band rather than a sidebar, so the results
+   column here is as wide as the whole page -- 3 columns stops the cards growing
+   to ~520px each on a 1600px screen, which is past comfortable for the body copy
+   in a card. */
+.card-grid--paged { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 1239px) { .card-grid--paged { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 819px)  { .card-grid--paged { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- Pagination ----------------------------------------------------- */
+
+/* Hidden rather than removed when there is only one page, so the results block
+   does not gain or lose its bottom margin as filters narrow the set. */
+.pager:empty { display: none; }
+.pager {
+  display: flex; align-items: center; justify-content: center;
+  flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-6);
+}
+.pager__btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  min-width: 40px; min-height: 40px; padding: 0 var(--sp-3);
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: var(--r-md);
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: border-color var(--t) var(--ease), background var(--t) var(--ease);
+}
+.pager__btn:hover:not(:disabled):not([aria-current="page"]) {
+  border-color: var(--navy-600); background: var(--navy-50);
+}
+.pager__btn:disabled { opacity: 0.4; cursor: default; }
+.pager__btn:focus-visible { outline: 2px solid var(--navy-600); outline-offset: 2px; }
+.pager__btn[aria-current="page"] {
+  background: var(--navy-700); border-color: var(--navy-700); color: #fff;
+}
+[data-theme="dark"] .pager__btn[aria-current="page"] {
+  background: var(--gold-500); border-color: var(--gold-500); color: var(--navy-900);
+}
+.pager__gap {
+  min-width: 24px; text-align: center; color: var(--text-muted);
+  font-size: 14px; user-select: none;
+}
 
 /* Cards carry the startup's soft shadow and 18px radius, so a card on a white
    section still reads as a card and not as a bordered block of text. */
@@ -634,23 +721,26 @@ mark { background: var(--gold-200); color: inherit; border-radius: 2px; padding:
 .compare-check input { width: 17px; height: 17px; accent-color: var(--navy-700); cursor: pointer; }
 .compare-check.is-disabled { opacity: 0.4; pointer-events: none; }
 
-/* ---------- Filter sidebar ----------------------------------------------- */
+/* ---------- Filter panel -------------------------------------------------- */
 
-.explorer { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: var(--sp-8); align-items: start; }
-@media (max-width: 1099px) { .explorer { grid-template-columns: 1fr; gap: var(--sp-5); } }
-@media (min-width: 1100px) {
-  .explorer.is-collapsed { grid-template-columns: 1fr; }
-  .explorer.is-collapsed .filters { display: none; }
-}
+/* The panel is a full-width band above the results, not a sidebar. Toggling it
+   therefore grows and shrinks the page vertically; the results column keeps its
+   width in both states, so nothing reflows sideways. */
 
+.explorer { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-6); align-items: start; }
+
+/* Static, not sticky: the band scrolls up and away with the page like any other
+   block, so an expanded set of filters never pins itself over the results. It
+   also needs no z-index now -- in flow it cannot be painted over by the cards
+   below it, which is what the old z-index: 80 was working around. The height
+   cap and internal scroller go with stickiness; the panel is now as tall as its
+   groups need. */
 .filters {
-  position: sticky; top: calc(var(--header-h) + var(--sp-5));
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--r-xl); padding: var(--sp-5);
-  max-height: calc(100vh - var(--header-h) - var(--sp-10));
-  overflow-y: auto; overscroll-behavior: contain;
 }
 @media (max-width: 1099px) {
+  .explorer { gap: var(--sp-5); }
   .filters {
     position: fixed; inset: auto 0 0 0; z-index: 120;
     max-height: 88vh; border-radius: var(--r-2xl) var(--r-2xl) 0 0;
@@ -672,6 +762,58 @@ mark { background: var(--gold-200); color: inherit; border-radius: 2px; padding:
   }
   .filters__head { padding-top: var(--sp-5); }
 }
+
+/* ---------- Filter panel: vertical expand / contract (desktop) -------------- */
+
+/* Only the desktop band collapses. On mobile the drawer owns open/closed via
+   .filters.is-open, so the wrapper stays an ordinary block and the sticky footer
+   inside it keeps working. */
+@media (min-width: 1100px) {
+  .filters__collapse {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows var(--t-slow) var(--ease);
+  }
+  .filters__collapse > .filters__collapse-inner { overflow: hidden; min-height: 0; }
+
+  /* visibility is delayed by the collapse duration so the content stays on screen
+     while it folds away, but still leaves the tab order once it is hidden. */
+  .explorer.is-collapsed .filters__collapse {
+    grid-template-rows: 0fr;
+    visibility: hidden;
+    transition: grid-template-rows var(--t-slow) var(--ease),
+                visibility 0s linear var(--t-slow);
+  }
+  /* collapsed, the panel is just its header bar — drop the gap under it */
+  .explorer.is-collapsed .filters__head { margin-bottom: 0; }
+
+  /* The panel spans the full grid width, so the groups sit side by side rather
+     than stacking into one very long column. Multi-column, not grid: auto-fill
+     reserves empty tracks, so any group count that was not a multiple of the
+     column count left a blank panel on the right -- up to ~900px at 9 groups.
+     The count moves as facets empty out, so the gap appeared and vanished while
+     filtering. Columns balance the groups instead. Expanding a group re-balances
+     the columns; break-inside keeps a group from being split across two of them. */
+  #filterBody { columns: 230px; column-gap: var(--sp-6); }
+  #filterBody .fgroup {
+    break-inside: avoid;
+    border-top: 1px solid var(--border);
+    padding: var(--sp-4) 0;
+  }
+
+  /* Group heading and its own options now share a left edge. .check carries 8px
+     of inline padding, which pushed every checkbox 8px right of the title above
+     it, and its hover fill out to the column edge. */
+  #filterBody .check { padding-inline: 0; }
+
+  /* .btn--apply is already hidden at this width, which left "Clear" as the only
+     child of a flex row, so .filters__foot .btn's flex:1 1 auto stretched it
+     across the full width of the panel. The head's "Clear all" does the same job,
+     so the footer is redundant here. Both buttons stay in the DOM -- the JS binds
+     to them regardless, and mobile still needs them for the drawer. */
+  .filters__foot { display: none; }
+}
+
 .fgroup { border-top: 1px solid var(--border); padding-block: var(--sp-4); }
 .fgroup:first-of-type { border-top: 0; padding-top: 0; }
 .fgroup__title {

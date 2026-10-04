@@ -236,6 +236,23 @@ YS.ui = (function () {
     return "";
   }
 
+  /* Verification tier. A record carries verification:"unverified" when it was
+     added from a source that did not check it against its official portal, so it
+     is labelled rather than presented as fact. Absent on the original records,
+     which are treated as the curated set. */
+  function isUnverified(s) { return s && s.verification === "unverified"; }
+  function unverifiedBadge(s) {
+    if (!isUnverified(s)) return "";
+    return '<span class="badge badge-unverified" title="' + esc(t("badge.unverifiedTitle")) + '">' +
+      icon("alert") + esc(t("badge.unverified")) + "</span>";
+  }
+  /* State-scope records sit alongside the central ones, so they are marked
+     rather than silently widening what the site claims to cover. */
+  function scopeBadge(s) {
+    if (!s || s.scope !== "State") return "";
+    return '<span class="badge badge-neutral">' + esc(t("badge.state")) + "</span>";
+  }
+
   /* ---------- scheme card ----------------------------------------------------- */
 
   /**
@@ -284,7 +301,8 @@ YS.ui = (function () {
 
       (lis ? '<ul class="scheme-card__eligibility">' + lis + "</ul>" : "") +
 
-      '<div class="scheme-card__flags">' + noAppBadge(s) + aidChips + unstatedBadge(s) + sourceBadge(s) + "</div>" +
+      '<div class="scheme-card__flags">' + unverifiedBadge(s) + scopeBadge(s) +
+        noAppBadge(s) + aidChips + unstatedBadge(s) + sourceBadge(s) + "</div>" +
 
       '<div class="scheme-card__foot">' +
         '<a class="btn-link" href="scheme.html?id=' + encodeURIComponent(s.id) + '"' +
@@ -935,11 +953,29 @@ YS.ui = (function () {
   function infoModal(topic) {
     const data = YS.store.meta().data_quality || {};
     const missing = (data.not_yet_available || []).join(", ");
+    /* Counts come from the dataset rather than being written into the copy, so the
+       About text cannot drift away from what is actually loaded. Older dataset
+       files predate the two-tier split; fall back to counting the records. */
+    function tier() {
+      const t = data.verification_tier || {};
+      const all = YS.store.all();
+      return {
+        curated_count: t.curated_count != null ? t.curated_count
+          : all.filter(s => s.verification !== "unverified").length,
+        unverified_count: t.unverified_count != null ? t.unverified_count
+          : all.filter(s => s.verification === "unverified").length
+      };
+    }
     const bodies = {
       about:
         "<p>Yojana Setu is an informational aggregator. It reads a single dataset of " +
-        esc(String(YS.store.all().length)) + " central Government of India education, scholarship and " +
+        esc(String(YS.store.all().length)) + " Government of India education, scholarship and " +
         "skill-development schemes and makes it searchable.</p>" +
+        "<p>The records are not all equally trustworthy. " +
+        esc(String(tier().curated_count)) + " are curated from a reviewed source compilation; " +
+        esc(String(tier().unverified_count)) + " were added from an unverified compilation " +
+        "and are badged <strong>Unverified</strong> wherever they appear. Their amounts, " +
+        "eligibility and dates may be wrong or out of date.</p>" +
         '<p class="fs-sm subtle mt-4">Dataset last compiled ' + esc(YS.store.meta().last_compiled || "—") +
         (YS.store.meta().enriched_on ? " · filter fields added " + esc(YS.store.meta().enriched_on) : "") + ".</p>",
       disclaimer:
@@ -1001,6 +1037,7 @@ YS.ui = (function () {
     eligibilityLines: eligibilityLines, cardHighlights: cardHighlights,
     statusBadge: statusBadge, categoryBadge: categoryBadge, noAppBadge: noAppBadge,
     sourceBadge: sourceBadge, unstatedBadge: unstatedBadge,
+    unverifiedBadge: unverifiedBadge, scopeBadge: scopeBadge, isUnverified: isUnverified,
     schemeCard: schemeCard,
     skeletonCards: skeletonCards, loadingBlock: loadingBlock,
     emptyState: emptyState, errorBox: errorBox,

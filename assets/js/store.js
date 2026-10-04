@@ -201,7 +201,7 @@ YS.store = (function () {
     all: "Open to all categories",
     SC: "SC", ST: "ST", OBC: "OBC", EBC: "EBC",
     DNT: "DNT / NT / SNT",
-    minority: "Minority community"
+    minority: "minority"
   };
 
   const GENDER_LABEL = { all: "Any gender", female: "Female", male: "Male" };

@@ -15,7 +15,7 @@
     const govLinked = YS.store.all().filter((s) => YS.ui.isGovHost(s.official_website)).length;
 
     /* Number and label are separate nodes with a real space between them, so a
-       screen reader announces "24 Central Schemes" rather than "24Central". */
+       screen reader announces "103 Schemes" rather than "103Schemes". */
     $("#trustStrip").innerHTML =
       '<div class="trust-item"><span class="trust-num">' + total + "</span> " +
         '<span class="trust-label">' + YS.ui.esc(t("trust.schemes")) + "</span></div>" +

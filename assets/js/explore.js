@@ -1,6 +1,7 @@
 /* ==========================================================================
    Yojana Setu — explore.js
-   Filter sidebar + results. Desktop sticky sidebar, mobile bottom sheet.
+   Filter panel + results. Desktop full-width band that expands and contracts
+   vertically; mobile bottom sheet.
    ========================================================================== */
 
 (function () {
@@ -246,6 +247,92 @@
       '<span class="row wrapf g-2">' + bits.join("") + "</span></div>";
   }
 
+  /* ---------- pagination ---------------------------------------------------- */
+
+  /* 9 per page == a 3x3 grid at the desktop breakpoint. It has to be a factor
+     of the column count, or the last row of every page but the last is ragged --
+     which reads as a broken grid rather than as "end of page". */
+  const PAGE_SIZE = 9;
+  let page = 1;
+
+  function pageCount(total) { return Math.max(1, Math.ceil(total / PAGE_SIZE)); }
+
+  /* The numbered window. With 103 records this is 12 pages, so printing every
+     number would wrap the pager onto two rows on a phone. Always keep the first
+     and last page reachable, plus a window around the current one, and mark the
+     skipped stretches with a non-interactive gap. */
+  function pageWindow(total, current) {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const out = [1];
+    const from = Math.max(2, current - 1);
+    const to = Math.min(total - 1, current + 1);
+    if (from > 2) out.push("gap");
+    for (let p = from; p <= to; p++) out.push(p);
+    if (to < total - 1) out.push("gap");
+    out.push(total);
+    return out;
+  }
+
+  function paintPager(total) {
+    const host = $("#pager");
+    if (!host) return;
+    const pages = pageCount(total);
+    /* One page needs no pager: with nothing to go to, the control is just noise.
+       The "1-9 of 9" range still shows, in #resultCount. */
+    if (pages < 2) { host.innerHTML = ""; return; }
+
+    const btn = (label, target, opts) => {
+      const o = opts || {};
+      return '<button type="button" class="pager__btn" data-page="' + target + '"' +
+        (o.current ? ' aria-current="page"' : "") +
+        (o.disabled ? " disabled" : "") +
+        ' aria-label="' + esc(o.aria || label) + '">' + esc(label) + "</button>";
+    };
+
+    let html = '<button type="button" class="pager__btn" data-page="' + (page - 1) + '"' +
+      (page === 1 ? " disabled" : "") +
+      ' aria-label="' + esc(t("pager.prev")) + '">' +
+      YS.ui.icon("chevronLeft") + "<span>" + esc(t("pager.prev")) + "</span></button>";
+
+    pageWindow(pages, page).forEach((p) => {
+      html += p === "gap"
+        ? '<span class="pager__gap" aria-hidden="true">…</span>'
+        : btn(String(p), p, {
+            current: p === page,
+            aria: p === page ? t("pager.current", { n: p }) : t("pager.page", { n: p })
+          });
+    });
+
+    html += '<button type="button" class="pager__btn" data-page="' + (page + 1) + '"' +
+      (page === pages ? " disabled" : "") +
+      ' aria-label="' + esc(t("pager.next")) + '">' +
+      "<span>" + esc(t("pager.next")) + "</span>" + YS.ui.icon("chevronRight") + "</button>";
+
+    host.innerHTML = html;
+  }
+
+  /* Move to a page. Repaints the results only -- the facet counts, active-filter
+     chips and diagnostics do not depend on which page you are looking at, and
+     recomputing them would collapse the open/closed state of the filter groups
+     the user just set up. */
+  function goToPage(n) {
+    const res = YS.store.query(null, { facets: true });
+    const pages = pageCount(res.total);
+    const next = Math.min(pages, Math.max(1, n));
+    if (next === page && res.total > 0) return;
+    page = next;
+    paintResults(res);
+    /* Land the reader at the top of the results rather than wherever the old
+       page happened to leave the scroll position -- otherwise page 2 opens
+       halfway down and looks empty. */
+    const head = $(".results-head");
+    if (head && head.scrollIntoView) {
+      const reduce = window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      head.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    }
+  }
+
   /* ---------- results -------------------------------------------------------- */
 
   function paintResults(res) {
@@ -253,11 +340,15 @@
     host.removeAttribute("aria-busy");
 
     const n = res.total;
-    $("#resultCount").innerHTML = n === 0
-      ? '<strong>' + esc(t("se.noFilters")) + "</strong>"
-      : "<strong>" + n + "</strong> " + esc(n === 1 ? t("explore.foundOne") : t("explore.found"));
+    const pages = pageCount(n);
+    /* Clamp rather than trust the caller: a filter change can shrink the set
+       under a page number that no longer exists. */
+    if (page > pages) page = pages;
+    if (page < 1) page = 1;
 
     if (n === 0) {
+      page = 1;
+      $("#resultCount").innerHTML = '<strong>' + esc(t("se.noFilters")) + "</strong>";
       const hasFilters = YS.store.activeFilterCount(res.filters) > 0;
       host.innerHTML = YS.ui.emptyState({
         icon: "search",
@@ -268,13 +359,37 @@
           { label: t("btn.quickMatch"), href: "quick-match.html", cls: "btn-secondary" }
         ]
       });
+      paintPager(0);
       return;
     }
-    host.innerHTML = '<div class="card-grid">' +
-      res.results.map((s) => YS.ui.schemeCard(s)).join("") + "</div>";
+
+    const from = (page - 1) * PAGE_SIZE;
+    const slice = res.results.slice(from, from + PAGE_SIZE);
+
+    /* The count line names the slice, not just the total: with paging on, a bare
+       "80 schemes found" sitting above nine cards reads as a bug. It is also the
+       aria-live region, so this is what announces the new range on a page change
+       -- which is why the pager itself carries no duplicate status line. */
+    if (pages > 1) {
+      const to = Math.min(n, from + PAGE_SIZE);
+      $("#resultCount").innerHTML = "<strong>" + (from + 1) + "–" + to + "</strong> " +
+        esc(t("explore.of")) + " <strong>" + n + "</strong> " +
+        esc(t("explore.found"));
+    } else {
+      $("#resultCount").innerHTML = "<strong>" + n + "</strong> " +
+        esc(n === 1 ? t("explore.foundOne") : t("explore.found"));
+    }
+
+    host.innerHTML = '<div class="card-grid card-grid--paged">' +
+      slice.map((s) => YS.ui.schemeCard(s)).join("") + "</div>";
+    paintPager(n);
   }
 
+  /* Every filter, sort or search change starts again at page 1. Resetting here
+     rather than at each call site means a new filter cannot be added later and
+     silently inherit "stay on page 7 of a set that now has two pages". */
   function repaintAll() {
+    page = 1;
     const res = YS.store.query(null, { facets: true });
     paintFilters(res);
     paintActive(res);
@@ -315,7 +430,7 @@
     }
   }
 
-  /* ---------- filter sidebar collapse / expand (desktop) ----------------------- */
+  /* ---------- filter panel collapse / expand (desktop) ------------------------ */
 
   function syncCollapsed(collapsed) {
     const ex = $(".explorer");
@@ -459,6 +574,13 @@
       }
     });
 
+    /* Pager */
+    $("#pager").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-page]");
+      if (!b || b.disabled) return;
+      goToPage(Number(b.getAttribute("data-page")));
+    });
+
     /* Sort */
     $("#sortSel").addEventListener("change", (e) => {
       YS.store.setFilters({ sort: e.target.value });
@@ -480,12 +602,14 @@
       repaintAll();
     });
 
+    /* Language change repaints the visible markup only. It has to go through
+       paintResults so the cards on screen are the current page's nine, not the
+       first nine of the whole set -- a re-render that ignored `page` would dump
+       the reader back to page 1's contents under page 7's pager. */
     YS.ui.setRepaint(() => {
-      const host = $("#results");
       const res = YS.store.query(null, { facets: true });
       if (res.total === 0) return;
-      host.innerHTML = '<div class="card-grid">' +
-        res.results.map((s) => YS.ui.schemeCard(s)).join("") + "</div>";
+      paintResults(res);
     });
   }
 

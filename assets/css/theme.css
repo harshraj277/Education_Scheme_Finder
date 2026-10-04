@@ -96,7 +96,19 @@
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
   /* Layout */
-  --maxw: 1280px;
+  /* The container tracks the viewport on large monitors rather than parking at a
+     fixed 1280px, which left an ever-wider empty gutter down each side of a
+     1440/1536/1920 screen — the page read as a narrow column floating in the
+     middle of the desktop. 1280px stays the FLOOR, so every viewport at or below
+     the old cap renders exactly as before, and 1600px is the CEILING, so line
+     lengths stay readable on very wide displays instead of stretching to the
+     bezel.
+
+     The 92vw slope is deliberately under 1. vw counts the scrollbar, so a slope
+     of 1 or more could compute a max-width larger than the space actually
+     available and hand the page a horizontal scrollbar. Under 1 it cannot
+     exceed the available width; `.wrap`'s own width:100% caps it regardless. */
+  --maxw: clamp(1280px, 92vw, 1600px);
   --maxw-prose: 680px;
   --header-h: 68px;
   --bottomnav-h: 60px;
@@ -251,10 +263,10 @@ main:focus-visible { outline: 3px solid var(--gold-500); outline-offset: -3px; }
   width: 100%;
   max-width: var(--maxw);
   margin-inline: auto;
-  padding-inline: var(--sp-6);
+  padding-inline: clamp(var(--sp-3), 4vw, var(--sp-6));
 }
-@media (max-width: 1023px) { .wrap { padding-inline: var(--sp-6); } }
-@media (max-width: 767px)  { .wrap { padding-inline: var(--sp-4); } }
+@media (max-width: 1023px) { .wrap { padding-inline: clamp(var(--sp-3), 3vw, var(--sp-6)); } }
+@media (max-width: 767px)  { .wrap { padding-inline: clamp(var(--sp-2), 2.5vw, var(--sp-4)); } }
 
 .wrap-narrow { max-width: 860px; }
 
